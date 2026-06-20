@@ -1,78 +1,111 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Pengelola;
+use App\Http\Controllers\Pengelola\PeralatanController;
+use App\Http\Controllers\User\WisataController as UserWisataController;
 
-// ── Auth ─────────────────────────────────────────────────────
-Route::get('/',      [LoginController::class, 'showForm'])->name('login');
-Route::get('/login', [LoginController::class, 'showForm']);
-Route::post('/login',[LoginController::class, 'login'])->name('login.post');
-Route::post('/logout',[LoginController::class,'logout'])->name('logout');
+// ── Landing Page ────────────────────
+Route::get('/', function () {
+    return view('index');
+});
 
-// ── Admin ─────────────────────────────────────────────────────
+// ── Autentikasi ─────────────────────
+Route::get('/login',   [LoginController::class, 'showForm'])->name('login');
+Route::post('/login',  [LoginController::class, 'login'])->name('login.post');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+Route::get('/register',  [LoginController::class, 'showRegisterForm'])->name('register');
+Route::post('/register', [LoginController::class, 'register'])->name('register.post');
+
+Route::get('/destinasi', function() { return view('publik.destinasi'); })->name('destinasi');
+Route::get('/camping',   function() { return view('publik.camping'); })->name('camping');
+Route::get('/penginapan', function() { return view('publik.penginapan'); })->name('penginapan');
+
+// ─── Endpoint API Asinkron Lokal Web ──
+Route::prefix('api/v1')->name('api.v1.')->group(function () {
+    Route::apiResource('wisata', Admin\WisataController::class);
+    
+    // 💡 Diarahkan langsung memanggil Model Kategori lokal database web
+    Route::get('kategori', function() {
+        return response()->json([
+            'success' => true,
+            'data'    => \App\Models\Kategori::all()
+        ]);
+    });
+});
+
+// ─── User / Admin / Pengelola ──
+Route::prefix('user')->name('user.')->middleware('auth.web:user')->group(function () {
+    Route::get('dashboard', function () {
+        return redirect()->route('user.wisata.index');
+    })->name('dashboard');
+
+    Route::get('wisata', function() {
+        return view('user.index');
+    })->name('wisata.index');
+    
+    Route::get('wisata/{id}', [UserWisataController::class, 'show'])->name('wisata.show');
+    Route::get('booking/tiket',    function() { return view('user.booking.tiket'); })->name('booking.tiket');
+    Route::get('booking/camping',  function() { return view('user.booking.camping'); })->name('booking.camping');
+    Route::get('booking/history',  function() { return view('user.booking.history'); })->name('booking.history');
+    Route::get('booking/invoice/{id}', function() { return view('user.booking.invoice'); })->name('booking.invoice');
+});
+
 Route::prefix('admin')->name('admin.')->middleware('auth.web:admin')->group(function () {
     Route::get('dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');
 
-    // Users
-    Route::get('users',                    [Admin\UserController::class, 'index'])->name('users');
-    Route::post('users',                   [Admin\UserController::class, 'store'])->name('users.store');
-    Route::put('users/{id}',               [Admin\UserController::class, 'update'])->name('users.update');
-    Route::delete('users/{id}',            [Admin\UserController::class, 'destroy'])->name('users.destroy');
-    Route::put('users/{id}/role',          [Admin\UserController::class, 'changeRole'])->name('users.role');
+    Route::get('users',           [Admin\UserController::class, 'index'])->name('users');
+    Route::post('users',          [Admin\UserController::class, 'store'])->name('users.store');
+    Route::put('users/{user}',    [Admin\UserController::class, 'update'])->name('users.update');
+    Route::delete('users/{user}', [Admin\UserController::class, 'destroy'])->name('users.destroy');
+    Route::put('users/{user}/role', [Admin\UserController::class, 'changeRole'])->name('users.role');
 
-    // Wisata
-    Route::get('wisata',                   [Admin\WisataController::class, 'index'])->name('wisata');
-    Route::post('wisata',                  [Admin\WisataController::class, 'store'])->name('wisata.store');
-    Route::put('wisata/{id}',              [Admin\WisataController::class, 'update'])->name('wisata.update');
-    Route::delete('wisata/{id}',           [Admin\WisataController::class, 'destroy'])->name('wisata.destroy');
+    // ── Perbaikan Rute Wisata Admin ──
+    Route::get('wisata',          [Admin\WisataController::class, 'index'])->name('wisata');
+    Route::post('wisata',         [Admin\WisataController::class, 'store'])->name('wisata.store');
+    Route::put('wisata/{wisata}', [Admin\WisataController::class, 'update'])->name('wisata.update');
+    Route::delete('wisata/{wisata}', [Admin\WisataController::class, 'destroy'])->name('wisata.destroy'); 
 
-    // Kategori
-    Route::get('kategori',                 [Admin\KategoriController::class, 'index'])->name('kategori');
-    Route::post('kategori',                [Admin\KategoriController::class, 'store'])->name('kategori.store');
-    Route::put('kategori/{id}',            [Admin\KategoriController::class, 'update'])->name('kategori.update');
-    Route::delete('kategori/{id}',         [Admin\KategoriController::class, 'destroy'])->name('kategori.destroy');
+    Route::get('kategori',                [Admin\KategoriController::class, 'index'])->name('kategori');
+    Route::post('kategori',               [Admin\KategoriController::class, 'store'])->name('kategori.store');
+    Route::put('kategori/{kategori}',     [Admin\KategoriController::class, 'update'])->name('kategori.update');
+    Route::delete('kategori/{kategori}',  [Admin\KategoriController::class, 'destroy'])->name('kategori.destroy');
 
-    // Pembayaran
-    Route::get('pembayaran',               [Admin\PembayaranController::class, 'index'])->name('pembayaran');
-    Route::get('pembayaran/{id}',          [Admin\PembayaranController::class, 'show'])->name('pembayaran.show');
-
-    // Laporan
-    Route::get('laporan',                  [Admin\LaporanController::class, 'index'])->name('laporan');
+    Route::get('pembayaran',              [Admin\PembayaranController::class, 'index'])->name('pembayaran');
+    Route::get('pembayaran/{pembayaran}', [Admin\PembayaranController::class, 'show'])->name('pembayaran.show');
+    Route::get('laporan',                 [Admin\LaporanController::class, 'index'])->name('laporan');
 });
 
-// ── Pengelola ─────────────────────────────────────────────────
 Route::prefix('pengelola')->name('pengelola.')->middleware('auth.web:pengelola')->group(function () {
     Route::get('dashboard', [Pengelola\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('wisata',    [Pengelola\WisataController::class, 'index'])->name('wisata');
+    Route::put('wisata',    [Pengelola\WisataController::class, 'update'])->name('wisata.update');
+    Route::post('wisata/galeri', [Pengelola\WisataController::class, 'uploadGaleri'])->name('wisata.galeri.upload');
+    Route::delete('wisata/galeri/{galeri}', [Pengelola\WisataController::class, 'deleteGaleri'])->name('wisata.galeri.delete');
 
-    // Wisata
-    Route::get('wisata',                   [Pengelola\WisataController::class, 'index'])->name('wisata');
-    Route::put('wisata',                   [Pengelola\WisataController::class, 'update'])->name('wisata.update');
-    Route::post('wisata/galeri',           [Pengelola\WisataController::class, 'uploadGaleri'])->name('wisata.galeri.upload');
-    Route::delete('wisata/galeri/{id}',    [Pengelola\WisataController::class, 'deleteGaleri'])->name('wisata.galeri.delete');
+    Route::get('paket-camping',          [Pengelola\PaketCampingController::class, 'index'])->name('camping');
+    Route::post('paket-camping',         [Pengelola\PaketCampingController::class, 'store'])->name('camping.store');
+    Route::put('paket-camping/{camping}', [Pengelola\PaketCampingController::class, 'update'])->name('camping.update');
+    Route::delete('paket-camping/{camping}', [Pengelola\PaketCampingController::class, 'destroy'])->name('camping');
 
-    // Paket Camping
-    Route::get('paket-camping',            [Pengelola\PaketCampingController::class, 'index'])->name('camping');
-    Route::post('paket-camping',           [Pengelola\PaketCampingController::class, 'store'])->name('camping.store');
-    Route::put('paket-camping/{id}',       [Pengelola\PaketCampingController::class, 'update'])->name('camping.update');
-    Route::delete('paket-camping/{id}',    [Pengelola\PaketCampingController::class, 'destroy'])->name('camping.destroy');
+    Route::get('penginapan',                 [Pengelola\PenginapanController::class, 'index'])->name('penginapan');
+    Route::post('penginapan',                [Pengelola\PenginapanController::class, 'store'])->name('penginapan.store');
+    Route::put('penginapan/{penginapan}',  [Pengelola\PenginapanController::class, 'update'])->name('penginapan.update');
 
-    // Penginapan
-    Route::get('penginapan',               [Pengelola\PenginapanController::class, 'index'])->name('penginapan');
-    Route::post('penginapan',              [Pengelola\PenginapanController::class, 'store'])->name('penginapan.store');
-    Route::put('penginapan/{id}',          [Pengelola\PenginapanController::class, 'update'])->name('penginapan.update');
+    Route::get('peralatan',              [PeralatanController::class, 'index'])->name('peralatan');
+    Route::post('peralatan',             [PeralatanController::class, 'store'])->name('peralatan.store');
+    Route::put('peralatan/{peralatan}',   [PeralatanController::class, 'update'])->name('peralatan.update');
+    Route::delete('peralatan/{peralatan}', [PeralatanController::class, 'destroy'])->name('peralatan');
 
-    // Peralatan
-    Route::get('peralatan',                [Pengelola\PeralatanController::class, 'index'])->name('peralatan');
-    Route::post('peralatan',               [Pengelola\PeralatanController::class, 'store'])->name('peralatan.store');
-    Route::put('peralatan/{id}',           [Pengelola\PeralatanController::class, 'update'])->name('peralatan.update');
-    Route::delete('peralatan/{id}',        [Pengelola\PeralatanController::class, 'destroy'])->name('peralatan.destroy');
+    Route::get('reservasi',              [Pengelola\ReservasiController::class, 'index'])->name('reservasi');
+    Route::put('reservasi/{reservasi}',  [Pengelola\ReservasiController::class, 'update'])->name('reservasi.update');
 
-    // Reservasi & Booking
-    Route::get('reservasi',                [Pengelola\ReservasiController::class, 'index'])->name('reservasi');
-    Route::put('reservasi/{id}',           [Pengelola\ReservasiController::class, 'update'])->name('reservasi.update');
-
-    // Laporan
-    Route::get('laporan',                  [Pengelola\LaporanController::class, 'index'])->name('laporan');
+    Route::get('laporan',                [Pengelola\LaporanController::class, 'index'])->name('laporan');
+    Route::get('booking-camping',        [PeralatanController::class, 'index'])->name('booking-camping'); 
+    Route::get('booking-penginapan',     [PeralatanController::class, 'index'])->name('booking-penginapan');
+    Route::get('sewa-peralatan',         [PeralatanController::class, 'index'])->name('sewa-peralatan');
 });

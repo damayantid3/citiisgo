@@ -1,11 +1,12 @@
 <?php
+
 namespace App\Services;
 
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\{Http, Session};
+use Illuminate\Support\Facades\{Http, Session, Log};
 
 /**
- * CitiisGo API Service
+ * CitiisGo API Service - FULL INTEGRATED CHANNELS
  * Semua request dari Web ke citiisgo-api melewati class ini.
  */
 class ApiService
@@ -14,22 +15,25 @@ class ApiService
 
     public function __construct()
     {
-        $this->baseUrl = config('citiisgo.api_url', env('CITIISGO_API_URL', 'http://localhost:8000/api/v1'));
+        // Mengunci langsung alamat server backend API yang sudah sukses mengeluarkan JSON
+        $this->baseUrl = 'http://127.0.0.1:8000/api/v1';
     }
 
-    // ── HTTP Client ──────────────────────────────────────────
+    /**
+     * Base HTTP Client builder dengan token otomatis jika tersedia
+     */
     private function client(): \Illuminate\Http\Client\PendingRequest
     {
-        $request = Http::baseUrl($this->baseUrl)
+        return Http::baseUrl($this->baseUrl)
             ->acceptJson()
-            ->timeout(30);
-
-        $token = Session::get('api_token');
-        if ($token) {
-            $request = $request->withToken($token);
-        }
-
-        return $request;
+            ->withHeaders([
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ])
+            ->timeout(30)
+            ->when(Session::get('api_token'), function ($request, $token) {
+                return $request->withToken($token);
+            });
     }
 
     // ── Auth ─────────────────────────────────────────────────
@@ -40,7 +44,12 @@ class ApiService
 
     public function logout(): Response
     {
-        return $this->client()->post('/auth/logout');
+        try {
+            return $this->client()->post('/auth/logout');
+        } catch (\Exception $e) {
+            Log::warning('API Logout failed or token already expired: ' . $e->getMessage());
+            return Http::response(['success' => false, 'message' => 'Token expired'], 401);
+        }
     }
 
     public function me(): Response
@@ -141,6 +150,7 @@ class ApiService
     // ── Pengelola: Dashboard ─────────────────────────────────
     public function pengelolaDashboard(): Response
     {
+        // FIX ROUTE PATH: Menembak lurus ke endpoint pengelola/dashboard v1 yang sah
         return $this->client()->get('/pengelola/dashboard');
     }
 
@@ -150,15 +160,29 @@ class ApiService
         return $this->client()->get('/pengelola/wisata');
     }
 
+    public function updateWisata(array $data): Response
+    {
+        return $this->client()->put('/pengelola/wisata', $data);
+    }
+
     public function pengelolaUpdateWisata(array $data): Response
     {
         return $this->client()->put('/pengelola/wisata', $data);
     }
 
-    public function pengelolaUploadGaleri(array $data, $foto): Response
+    public function pengelolaUploadGaleri(array $data, \Illuminate\Http\UploadedFile $foto): Response
     {
-        return $this->client()->attach('foto', $foto->getContent(), $foto->getClientOriginalName())
-            ->post('/pengelola/wisata/galeri', $data);
+        $request = $this->client()->asMultipart();
+
+        foreach ($data as $key => $value) {
+            $request->attach($key, $value);
+        }
+
+        return $request->attach(
+            'foto', 
+            fn () => fopen($foto->getRealPath(), 'r'), 
+            $foto->getClientOriginalName()
+        )->post('/pengelola/wisata/galeri');
     }
 
     public function pengelolaDeleteGaleri(int $id): Response
@@ -179,12 +203,12 @@ class ApiService
 
     public function updatePaketCamping(int $id, array $data): Response
     {
-        return $this->client()->put("/pengelola/paket-camping/$id", $data);
+        return $this->client()->put("/pengelola/paket-camping/{$id}", $data);
     }
 
     public function deletePaketCamping(int $id): Response
     {
-        return $this->client()->delete("/pengelola/paket-camping/$id");
+        return $this->client()->delete("/pengelola/paket-camping/{$id}");
     }
 
     // ── Pengelola: Penginapan ────────────────────────────────
@@ -203,7 +227,7 @@ class ApiService
         return $this->client()->put("/pengelola/penginapan/$id", $data);
     }
 
-    // ── Pengelola: Peralatan ─────────────────────────────────
+    // ── Pengelola: Peralatan Camping ─────────────────────────
     public function getPeralatan(): Response
     {
         return $this->client()->get('/pengelola/peralatan');

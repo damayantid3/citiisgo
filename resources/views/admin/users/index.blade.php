@@ -1,299 +1,296 @@
 @extends('layouts.app')
-@section('title','Manajemen User')
-@section('topbar-title','👥 Manajemen User')
-@section('show-search','1')
+@section('title', 'Manajemen User - CitiisGo')
+@section('topbar-title', '👥 Manajemen User')
 
 @section('content')
-<div class="breadcrumb">
-  <a href="{{ route('admin.dashboard') }}">🏠 Dashboard</a>
-  <span class="bc-sep">›</span><span>Manajemen User</span>
+{{-- ── BREADCRUMB ── --}}
+<div class="flex items-center gap-2 text-xs text-slate-400 mb-5 font-medium">
+    <span class="text-sm">🏠</span>
+    <span class="text-slate-300">/</span>
+    <a href="{{ route('admin.dashboard') }}" class="hover:text-slate-600 transition-colors">Dashboard</a>
+    <span class="text-slate-300">/</span>
+    <span class="text-slate-500">Manajemen User</span>
 </div>
 
-<div class="page-hd">
-  <div class="page-hd-left">
-    <h1>👥 Manajemen User</h1>
-    <p>Kelola semua akun pengguna sistem CitiisGo</p>
-  </div>
-  <div class="page-hd-right">
-    <button class="btn btn-out btn-sm">📥 Export CSV</button>
-    <button class="btn btn-g" onclick="openModal('modalTambahUser')">➕ Tambah User</button>
-  </div>
-</div>
-
-<!-- Stats -->
-<div class="stats-grid">
-  <div class="stat-card" style="--ac:var(--g600)">
-    <div class="stat-label">Total User</div>
-    <div class="stat-value">{{ number_format($users['total'] ?? 4829) }}</div>
-    <div class="stat-sub"><span class="stat-up">▲ 12.4%</span> bulan ini</div>
-    <div class="stat-icon">👥</div>
-  </div>
-  <div class="stat-card" style="--ac:var(--b700)">
-    <div class="stat-label">Wisatawan Aktif</div>
-    <div class="stat-value">{{ number_format($users['wisatawan'] ?? 4742) }}</div>
-    <div class="stat-sub"><span class="stat-up">▲ 8.2%</span></div>
-    <div class="stat-icon">🧳</div>
-  </div>
-  <div class="stat-card" style="--ac:var(--o500)">
-    <div class="stat-label">Pengelola</div>
-    <div class="stat-value">{{ $users['pengelola'] ?? 48 }}</div>
-    <div class="stat-sub">+3 baru bulan ini</div>
-    <div class="stat-icon">🏔️</div>
-  </div>
-  <div class="stat-card" style="--ac:var(--r700)">
-    <div class="stat-label">Akun Suspend</div>
-    <div class="stat-value">{{ $users['suspended'] ?? 39 }}</div>
-    <div class="stat-sub"><span class="stat-down">▲ 2</span> kasus baru</div>
-    <div class="stat-icon">🚫</div>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-head">
-    <div class="card-title">Daftar Semua User</div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span class="text-sm text-muted">{{ $users['total'] ?? 4829 }} total user</span>
+{{-- ── PAGE HEADER ── --}}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 w-full">
+    <div class="text-left">
+        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">Daftar Pengguna Sistem</h1>
+        <p class="text-sm text-slate-500 font-medium mt-1">Kelola data administrator, pengelola objek wisata, dan wisatawan terdaftar secara berkala.</p>
     </div>
-  </div>
-  <div class="card-body" style="padding-bottom:0">
-    <div class="filter-bar">
-      <form method="GET" action="{{ route('admin.users') }}" style="display:flex;gap:10px;flex-wrap:wrap;flex:1">
-        <div class="search-input" style="flex:1;min-width:200px;max-width:320px">
-          <span>🔍</span>
-          <input type="text" name="search" placeholder="Cari nama, email..." value="{{ request('search') }}">
-        </div>
-        <select name="role" class="select-filter" onchange="this.form.submit()">
-          <option value="">Semua Role</option>
-          <option value="user" {{ request('role')=='user'?'selected':'' }}>Wisatawan</option>
-          <option value="pengelola" {{ request('role')=='pengelola'?'selected':'' }}>Pengelola</option>
-          <option value="admin" {{ request('role')=='admin'?'selected':'' }}>Admin</option>
-        </select>
-        <select name="status" class="select-filter" onchange="this.form.submit()">
-          <option value="">Semua Status</option>
-          <option value="active" {{ request('status')=='active'?'selected':'' }}>Aktif</option>
-          <option value="inactive" {{ request('status')=='inactive'?'selected':'' }}>Inactive</option>
-          <option value="suspended" {{ request('status')=='suspended'?'selected':'' }}>Suspended</option>
-        </select>
-        @if(request('search') || request('role') || request('status'))
-          <a href="{{ route('admin.users') }}" class="btn btn-out btn-sm">✕ Reset</a>
-        @endif
-      </form>
+    <div class="flex-shrink-0">
+        <button onclick="openModal('modalTambahUser')" class="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold text-xs px-4 h-10 rounded-xl shadow-md shadow-emerald-600/10 hover:bg-emerald-700 active:scale-95 transition-all duration-150 cursor-pointer border-none outline-none">
+            ➕ Tambah User Baru
+        </button>
     </div>
-  </div>
+</div>
 
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead>
-        <tr>
-          <th style="width:32px"><input type="checkbox" id="selectAll"></th>
-          <th>User</th><th>No. HP</th><th>Role</th><th>Status</th>
-          <th>Terdaftar</th><th>Transaksi</th><th style="width:120px">Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        @php
-        $dummies = [
-          ['Budi Santoso','budi.s@email.com','0812-3456-7890','user','active','12 Jan 2025',24,'#E3F2FD','#1565C0','BS'],
-          ['Budi Kusuma','budi.k@wisata.com','0821-9876-5432','pengelola','active','3 Feb 2025',0,'var(--o50)','var(--o700)','BK'],
-          ['Siti Rahayu','siti.r@email.com','0895-1234-5678','user','suspended','28 Mar 2025',7,'var(--r50)','var(--r700)','SR'],
-          ['Ahmad Fauzi','ahmad.f@email.com','0877-6543-2109','user','active','5 Apr 2025',31,'var(--g50)','var(--g700)','AF'],
-          ['Dewi Permata','dewi.p@wisata.co.id','0813-5678-9012','pengelola','active','10 Apr 2025',0,'var(--p50)','var(--p700)','DP'],
-          ['Rizky Wardana','rizky.w@email.com','0856-4321-8765','user','inactive','22 Apr 2025',3,'#FFF8E1','#F57F17','RW'],
-        ];
-        $roleLabel = ['user'=>'Wisatawan','pengelola'=>'Pengelola','admin'=>'Admin'];
-        @endphp
-
-        @foreach($users['data'] ?? $dummies as $u)
-        @php $isArr = is_array($u); @endphp
-        <tr>
-          <td><input type="checkbox" class="row-check"></td>
-          <td>
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="av" style="background:{{ $isArr ? $u[7] : 'var(--g50)' }};color:{{ $isArr ? $u[8] : 'var(--g700)' }}">
-                {{ $isArr ? $u[9] : strtoupper(substr($u['nama'],0,2)) }}
-              </div>
-              <div>
-                <div class="fw7" style="font-size:13.5px">{{ $isArr ? $u[0] : $u['nama'] }}</div>
-                <div class="text-sm text-muted">{{ $isArr ? $u[1] : $u['email'] }}</div>
-              </div>
-            </div>
-          </td>
-          <td class="text-muted">{{ $isArr ? $u[2] : ($u['no_hp'] ?? '—') }}</td>
-          <td>
-            @php $role = $isArr ? $u[3] : $u['role'] @endphp
-            <span class="badge {{ $role==='admin'?'bg-p':($role==='pengelola'?'bg-w':'bg-i') }}">
-              {{ $roleLabel[$role] ?? $role }}
-            </span>
-          </td>
-          <td>
-            @php $status = $isArr ? $u[4] : $u['status'] @endphp
-            <span class="badge {{ $status==='active'?'bg-s':($status==='suspended'?'bg-d':'bg-y') }}">
-              <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
-              {{ ucfirst($status) }}
-            </span>
-          </td>
-          <td class="text-muted text-sm">{{ $isArr ? $u[5] : ($u['created_at'] ?? '-') }}</td>
-          <td class="fw7">{{ $isArr ? $u[6] : '—' }}</td>
-          <td>
-            <div style="display:flex;gap:4px">
-              <button class="btn btn-out btn-xs" title="Edit" onclick="openModal('modalEditUser')">✏️</button>
-              @if(($isArr?$u[4]:$u['status']) === 'suspended')
-                <button class="btn btn-xs bg-s" style="background:var(--g50);color:var(--g700);border:1px solid var(--g100)" title="Aktifkan">✅</button>
-              @else
-                <button class="btn btn-red btn-xs" title="Hapus" onclick="confirmDelete({{ $isArr ? 0 : $u['id'] }})">🗑️</button>
-              @endif
-            </div>
-          </td>
-        </tr>
+{{-- FIXED: Notifikasi error validasi lokal dipusatkan di sini saja --}}
+@if($errors->any())
+<div class="mb-5 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold px-4 py-3 rounded-xl shadow-sm">
+    <ul class="list-disc pl-4 space-y-0.5">
+        @foreach($errors->all() as $error)
+            <li>{{ $error }}</li>
         @endforeach
-      </tbody>
-    </table>
-  </div>
+    </ul>
+</div>
+@endif
 
-  <div class="card-foot">
-    <span class="text-sm text-muted">
-      Menampilkan <strong>1–{{ count($users['data'] ?? $dummies) }}</strong> dari <strong>{{ $users['total'] ?? 4829 }}</strong> user
-    </span>
-    <div class="page-nav">
-      <button class="page-btn">‹</button>
-      <button class="page-btn active">1</button>
-      <button class="page-btn">2</button>
-      <button class="page-btn">3</button>
-      <button class="page-btn">...</button>
-      <button class="page-btn">483</button>
-      <button class="page-btn">›</button>
+{{-- ── DATA TABLE CARD CONTAINER ── --}}
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden w-full mb-6">
+    <div class="overflow-x-auto w-full">
+        <table class="w-full text-left border-collapse text-xs font-medium">
+            <thead>
+                <tr class="bg-slate-50/70 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                    <th class="px-5 py-4 w-1/4">Nama Lengkap</th>
+                    <th class="px-5 py-4 w-1/4">Email Resmi</th>
+                    <th class="px-5 py-4 w-1/6">No. Telepon</th>
+                    <th class="px-5 py-4 w-1/6">Hak Akses / Role</th>
+                    <th class="px-5 py-4 w-1/12">Status</th>
+                    <th class="px-5 py-4 text-center w-1/12">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+                @forelse($users ?? [] as $user)
+                <tr class="hover:bg-slate-50/40 transition-colors">
+                    <td class="px-5 py-3.5 font-bold text-slate-900 flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-full bg-emerald-50 font-extrabold text-[11px] text-emerald-700 flex items-center justify-center border border-emerald-200/30 shadow-inner flex-shrink-0">
+                            {{ strtoupper(substr($user['nama'] ?? $user['name'] ?? 'U', 0, 2)) }}
+                        </div>
+                        <span class="truncate">{{ $user['nama'] ?? $user['name'] ?? '—' }}</span>
+                    </td>
+                    <td class="px-5 py-3.5 text-slate-500 font-mono truncate">{{ $user['email'] ?? '—' }}</td>
+                    <td class="px-5 py-3.5 text-slate-500 font-mono">{{ $user['telepon'] ?? $user['no_hp'] ?? '—' }}</td>
+                    <td class="px-5 py-3.5">
+                        @php
+                            $role = strtolower($user['role'] ?? 'user');
+                            if($role === 'user') $role = 'wisatawan';
+
+                            $roleStyles = [
+                                'admin' => 'bg-purple-50 text-purple-700 border-purple-100',
+                                'admin utama' => 'bg-purple-50 text-purple-700 border-purple-100',
+                                'pengelola' => 'bg-amber-50 text-amber-700 border-amber-100',
+                                'wisatawan' => 'bg-blue-50 text-blue-700 border-blue-100'
+                            ][$role] ?? 'bg-slate-50 text-slate-700 border-slate-100';
+                            
+                            $roleLabel = [
+                                'admin' => 'Admin Utama',
+                                'admin utama' => 'Admin Utama',
+                                'pengelola' => 'Pengelola Wisata',
+                                'wisatawan' => 'Wisatawan'
+                            ][$role] ?? ucfirst($role);
+                        @endphp
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border {{ $roleStyles }}">
+                            {{ $roleLabel }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3.5">
+                        @if(($user['status'] ?? 'active') === 'active' || ($user['is_active'] ?? true) == true)
+                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Aktif
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-50 text-slate-400 border border-slate-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>Nonaktif
+                            </span>
+                        @endif
+                    </td>
+                    <td class="px-5 py-3.5">
+                        <div class="flex items-center justify-center gap-1.5">
+                            <button type="button" 
+                                    onclick="openEditModal(this)"
+                                    data-id="{{ $user['id'] }}"
+                                    data-nama="{{ $user['nama'] ?? $user['name'] ?? '—' }}"
+                                    data-email="{{ $user['email'] }}"
+                                    data-role="{{ $role }}"
+                                    class="w-7 h-7 bg-white border border-slate-200 rounded-lg flex items-center justify-center hover:bg-slate-50 text-xs shadow-sm active:scale-95 transition-transform cursor-pointer" title="Ubah Data Profil">
+                                ✏️
+                            </button>
+                            <button type="button"
+                                    onclick="confirmDelete({{ $user['id'] }}, '{{ $user['nama'] ?? $user['name'] ?? 'User' }}')"
+                                    class="w-7 h-7 bg-white border border-rose-200 rounded-lg flex items-center justify-center hover:bg-rose-50 text-rose-600 text-xs shadow-sm active:scale-95 transition-transform cursor-pointer" title="Hapus Akun User">
+                                🗑️
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="px-5 py-12 text-center text-slate-400 font-medium text-xs">
+                        📭 Tidak ada data pengguna terdaftar di dalam database sistem.
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
-  </div>
 </div>
 
-<!-- ── Modal Tambah User ── -->
-<div class="modal-backdrop" id="modalTambahUser">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">➕ Tambah User Baru</div>
-      <button class="modal-close" onclick="closeModal('modalTambahUser')">✕</button>
+{{-- ── MODAL POPUP: TAMBAH USER BARU ── --}}
+<div class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm items-center justify-center p-4 modal-backdrop" id="modalTambahUser">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-base">➕ Tambah User Baru</h3>
+            <button onclick="closeModal('modalTambahUser')" class="w-7 h-7 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400 font-bold flex items-center justify-center text-xs cursor-pointer">✕</button>
+        </div>
+        <form action="{{ route('admin.users.store') }}" method="POST" class="m-0">
+            @csrf
+            <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Nama Lengkap <span class="text-rose-600">*</span></label>
+                        <input type="text" name="nama" placeholder="Nama lengkap user" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 transition-all">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Email <span class="text-rose-600">*</span></label>
+                        <input type="email" name="email" placeholder="email@example.com" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 transition-all">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">No. HP / Telepon</label>
+                        <input type="text" name="no_hp" placeholder="08xx-xxxx-xxxx" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 transition-all">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Role Hak Akses <span class="text-rose-600">*</span></label>
+                        <select name="role" required class="w-full border border-slate-200 bg-white rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 transition-all cursor-pointer">
+                            <option value="wisatawan">Wisatawan</option>
+                            <option value="pengelola">Pengelola Wisata</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Password <span class="text-rose-600">*</span></label>
+                        <input type="password" name="password" placeholder="Min. 6 karakter" required minlength="6" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 transition-all">
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-slate-100 bg-slate-50">
+                <button type="button" onclick="closeModal('modalTambahUser')" class="inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 font-bold text-xs px-4 h-9 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-transform cursor-pointer">Batal</button>
+                <button type="submit" class="inline-flex items-center justify-center gap-1 bg-emerald-600 text-white font-bold text-xs px-4 h-9 rounded-xl shadow-md shadow-emerald-600/10 hover:bg-emerald-700 active:scale-95 transition-transform cursor-pointer">💾 Simpan User</button>
+            </div>
+        </form>
     </div>
-    <form action="{{ route('admin.users.store') }}" method="POST">
-      @csrf
-      <div class="modal-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Nama Lengkap <span class="req">*</span></label>
-            <input type="text" name="nama" class="form-control" placeholder="Nama lengkap user" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Email <span class="req">*</span></label>
-            <input type="email" name="email" class="form-control" placeholder="email@example.com" required>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">No. HP</label>
-            <input type="text" name="no_hp" class="form-control" placeholder="08xx-xxxx-xxxx">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Role <span class="req">*</span></label>
-            <select name="role" class="form-control" required>
-              <option value="">-- Pilih Role --</option>
-              <option value="user">Wisatawan</option>
-              <option value="pengelola">Pengelola Wisata</option>
-              <option value="admin">Administrator</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Password <span class="req">*</span></label>
-            <input type="password" name="password" class="form-control" placeholder="Min. 8 karakter" required minlength="8">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Konfirmasi Password</label>
-            <input type="password" name="password_confirmation" class="form-control" placeholder="Ulangi password">
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Status</label>
-          <select name="status" class="form-control">
-            <option value="active">Aktif</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-out" onclick="closeModal('modalTambahUser')">Batal</button>
-        <button type="submit" class="btn btn-g">💾 Simpan User</button>
-      </div>
-    </form>
-  </div>
 </div>
 
-<!-- ── Modal Edit User ── -->
-<div class="modal-backdrop" id="modalEditUser">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">✏️ Edit User</div>
-      <button class="modal-close" onclick="closeModal('modalEditUser')">✕</button>
+{{-- ── MODAL POPUP: EDIT DATA USER ── --}}
+<div class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm items-center justify-center p-4 modal-backdrop" id="modalEditUser">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-base">✏️ Edit Profil User</h3>
+            <button onclick="closeModal('modalEditUser')" class="w-7 h-7 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400 font-bold flex items-center justify-center text-xs cursor-pointer">✕</button>
+        </div>
+        <form action="" method="POST" id="formEditUser" class="m-0">
+            @csrf @method('PUT')
+            <div class="p-6 space-y-4">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-500">Nama Lengkap</label>
+                    <input type="text" name="nama" id="edit_nama" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 transition-all">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-500">Email Alamat</label>
+                    <input type="email" name="email" id="edit_email" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 transition-all">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Ubah Role</label>
+                        <select name="role" id="edit_role" class="w-full border border-slate-200 bg-white rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 cursor-pointer">
+                            <option value="wisatawan">Wisatawan</option>
+                            <option value="pengelola">Pengelola Wisata</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-slate-100 bg-slate-50">
+                <button type="button" onclick="closeModal('modalEditUser')" class="inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 font-bold text-xs px-4 h-9 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-transform cursor-pointer">Batal</button>
+                <button type="submit" class="inline-flex items-center justify-center gap-1 bg-emerald-600 text-white font-bold text-xs px-4 h-9 rounded-xl shadow-md shadow-emerald-600/10 hover:bg-emerald-700 active:scale-95 transition-transform cursor-pointer">💾 Update Data</button>
+            </div>
+        </form>
     </div>
-    <form action="{{ route('admin.users.update', ':id') }}" method="POST" id="formEditUser">
-      @csrf @method('PUT')
-      <div class="modal-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Nama Lengkap</label>
-            <input type="text" name="nama" id="edit_nama" class="form-control">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input type="email" name="email" id="edit_email" class="form-control">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Status</label>
-            <select name="status" id="edit_status" class="form-control">
-              <option value="active">Aktif</option>
-              <option value="inactive">Inactive</option>
-              <option value="suspended">Suspended</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Ubah Role</label>
-            <select name="role" id="edit_role" class="form-control">
-              <option value="user">Wisatawan</option>
-              <option value="pengelola">Pengelola</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-out" onclick="closeModal('modalEditUser')">Batal</button>
-        <button type="submit" class="btn btn-g">💾 Update</button>
-      </div>
-    </form>
-  </div>
 </div>
 
-<!-- Delete form (hidden) -->
-<form id="deleteUserForm" method="POST" style="display:none">
-  @csrf @method('DELETE')
+{{-- Hidden Core Delete Form --}}
+<form id="deleteUserForm" method="POST" class="hidden">
+    @csrf @method('DELETE')
 </form>
-
 @endsection
 
 @push('scripts')
-<script>
-// Select all checkbox
-document.getElementById('selectAll').addEventListener('change', function() {
-  document.querySelectorAll('.row-check').forEach(cb => cb.checked = this.checked);
-});
+{{-- Pustaka SweetAlert2 Untuk Mewarnai Notifikasi & Dialog Konfirmasi --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-function confirmDelete(id) {
-  if (confirm('Yakin ingin menghapus user ini?')) {
-    const form = document.getElementById('deleteUserForm');
-    form.action = '{{ route("admin.users.destroy", ":id") }}'.replace(':id', id);
-    form.submit();
-  }
+<script>
+// Menampilkan Popup Sukses Modern dari Session Flash Laravel
+@if(session('success'))
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: "{{ session('success') }}",
+        showConfirmButton: false,
+        timer: 2500,
+        customClass: {
+            popup: 'rounded-2xl font-sans text-xs',
+            title: 'font-extrabold text-slate-900'
+        }
+    });
+@endif
+
+function openEditModal(button) {
+    const id = button.getAttribute('data-id');
+    const nama = button.getAttribute('data-nama');
+    const email = button.getAttribute('data-email');
+    const role = button.getAttribute('data-role');
+
+    document.getElementById('edit_nama').value = nama;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_role').value = role;
+
+    const form = document.getElementById('formEditUser');
+    form.action = "{{ route('admin.users.update', ':id') }}".replace(':id', id);
+
+    openModal('modalEditUser');
+}
+
+// FIXED: Mengganti konfirmasi hapus bawaan browser menjadi Dialog Interaktif Kustom Premium
+function confirmDelete(id, name) {
+    Swal.fire({
+        title: 'Hapus Pengguna?',
+        text: `Apakah Anda yakin ingin menghapus permanen akun "${name}"? Tindakan ini tidak dapat dibatalkan.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e11d48', // Warna merah rose Tailwind
+        cancelButtonColor: '#64748b',  // Warna slate grey
+        confirmButtonText: 'Ya, Hapus Permanen!',
+        cancelButtonText: 'Batal',
+        customClass: {
+            popup: 'rounded-2xl font-sans',
+            title: 'font-extrabold text-slate-900 text-lg',
+            htmlContainer: 'text-xs text-slate-500 font-medium mt-2',
+            confirmButton: 'text-xs font-bold px-4 py-2 rounded-xl',
+            cancelButton: 'text-xs font-bold px-4 py-2 rounded-xl'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.getElementById('deleteUserForm');
+            form.action = '{{ route("admin.users.destroy", ":id") }}'.replace(':id', id);
+            form.submit();
+        }
+    });
+}
+
+function openModal(id) {
+    const modal = document.getElementById(id);
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
 }
 </script>
 @endpush

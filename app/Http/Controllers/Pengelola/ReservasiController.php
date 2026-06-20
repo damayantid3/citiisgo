@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Pengelola;
+
 use App\Http\Controllers\Controller;
 use App\Services\ApiService;
 use Illuminate\Http\Request;
@@ -8,20 +9,32 @@ use Illuminate\Http\Request;
 class ReservasiController extends Controller
 {
     public function __construct(private ApiService $api) {}
- 
-    public function index(Request $request)
+
+    /**
+     * Menampilkan semua log data reservasi tiket masuk
+     */
+    public function index()
     {
-        $reservasi = $this->api->pengelolaGetReservasi($request->only(['status','page']))->json('data');
-        $camping   = $this->api->pengelolaGetBookingCamping($request->only(['status','page']))->json('data');
-        $penginapan= $this->api->pengelolaGetBookingPenginapan($request->only(['status','page']))->json('data');
-        $sewa      = $this->api->pengelolaGetSewaPeralatan($request->only(['status','page']))->json('data');
-        return view('pengelola.reservasi.index', compact('reservasi','camping','penginapan','sewa'));
+        $res = $this->api->pengelolaGetReservasi();
+        $reservasi = $res->successful() ? $res->json('data') : [];
+
+        return view('pengelola.reservasi.index', compact('reservasi'));
     }
- 
+
+    /**
+     * Mengubah status tiket (Misal dari confirmed menjadi completed / check-in)
+     */
     public function update(Request $request, $id)
     {
-        $this->api->pengelolaUpdateReservasi($id, $request->status);
-        return redirect()->back()->with('success', 'Status diperbarui.');
+        $status = $request->input('status', 'completed');
+
+        // Menembak fungsi update status reservasi di ApiService
+        $res = $this->api->pengelolaUpdateReservasi($id, $status);
+
+        if (!$res->successful()) {
+            return back()->withErrors(['error' => $res->json('message') ?? 'Gagal mengubah status validasi tiket.']);
+        }
+
+        return redirect()->route('pengelola.reservasi')->with('success', 'Validasi Check-In sukses! Wisatawan diperbolehkan masuk.');
     }
 }
- 

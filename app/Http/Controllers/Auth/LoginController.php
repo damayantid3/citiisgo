@@ -1,9 +1,13 @@
 <?php
 
 namespace App\Http\Controllers\Auth;
+
 use App\Http\Controllers\Controller;
 use App\Services\ApiService;
 use Illuminate\Http\Request;
+use Exception;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Http;
 
 class LoginController extends Controller
 {
@@ -11,44 +15,147 @@ class LoginController extends Controller
  
     public function showForm()
     {
-        if (session('api_token')) {
-            return redirect()->route(session('user_role') === 'admin' ? 'admin.dashboard' : 'pengelola.dashboard');
+        if (session()->has('api_token') && session()->has('user_role')) {
+            $role = session('user_role');
+            $route = match($role) {
+                'admin'     => 'admin.dashboard',
+                'pengelola' => 'pengelola.dashboard',
+                'user'      => 'user.dashboard',
+                default     => 'login'
+            };
+            return redirect()->route($route);
         }
         return view('auth.login');
+    }
+
+    /**
+     * Menampilkan Halaman Form Register Web Wisatawan
+     */
+    public function showRegisterForm()
+    {
+        return view('auth.register');
+    }
+
+    /**
+     * Memproses Pendaftaran Akun Wisatawan baru via Web ke API
+     */
+    public function register(Request $request)
+    {
+        // Validasi input di sisi Web Admin (Menerima 'nama' dari form HTML register.blade.php)
+        $request->validate([
+            'nama'     => 'required|string|max:255',
+            'email'    => 'required|email',
+            'password' => 'required|confirmed|min:8'
+        ]);
+
+        try {
+            // STRATEGI AMAN: Mengirimkan key 'name' DAN 'nama' sekaligus 
+            // agar lolos apa pun jenis validasi yang dipasang di Server API Anda
+            $response = Http::baseUrl('http://127.0.0.1:8000/api/v1')
+                ->acceptJson()
+                ->post('/auth/register', [
+                    'name'                  => $request->nama, // Untuk API yang mencari 'name'
+                    'nama'                  => $request->nama, // Untuk API yang mencari 'nama'
+                    'email'                 => $request->email,
+                    'password'              => $request->password,
+                    'password_confirmation' => $request->password_confirmation,
+                    'role'                  => 'user'
+                ]);
+
+            if (!$response->successful() || !$response->json('success')) {
+                // Mengambil pesan error dari API secara detail
+                $apiErrors = $response->json('errors') ?? [];
+                $errorMessage = $response->json('message') ?? 'Gagal melakukan pendaftaran.';
+                
+                // Jika API mengembalikan array eror spesifik, ambil yang pertama
+                if (!empty($apiErrors)) {
+                    $flattened = Arr::flatten($apiErrors);
+                    $errorMessage = !empty($flattened) ? reset($flattened) : $errorMessage;
+                }
+
+                return back()
+                    ->withInput($request->except('password'))
+                    ->withErrors(['register_error' => $errorMessage]);
+            }
+
+            return redirect()->route('login')->with('success', 'Akun Wisandari berhasil dibuat! Silakan masuk.');
+
+        } catch (Exception $e) {
+            return back()
+                ->withInput($request->except('password'))
+                ->withErrors(['register_error' => 'Gagal terhubung ke server registrasi Citiisgo-API.']);
+        }
     }
  
     public function login(Request $request)
     {
-        $request->validate(['email'=>'required|email','password'=>'required']);
- 
-        $res = $this->api->login($request->email, $request->password);
- 
-        if (!$res->successful() || !$res->json('success')) {
-            return back()->withErrors(['email' => $res->json('message') ?? 'Login gagal.']);
-        }
- 
-        $data = $res->json('data');
-        $user = $data['user'];
-        $role = $user['role'];
- 
-        if (!in_array($role, ['admin','pengelola'])) {
-            return back()->withErrors(['email' => 'Akses ditolak. Panel web hanya untuk Admin dan Pengelola.']);
-        }
- 
-        session([
-            'api_token' => $data['token'],
-            'user'      => $user,
-            'user_role' => $role,
+        $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required'
         ]);
  
-        return redirect()->route($role === 'admin' ? 'admin.dashboard' : 'pengelola.dashboard');
+        try {
+            $res = $this->api->login($request->email, $request->password);
+    
+            if (!$res->successful() || !$res->json('success')) {
+                return back()
+                    ->withInput($request->only('email'))
+                    ->withErrors(['email' => $res->json('message') ?? 'Email atau password salah.']);
+            }
+    
+            $data = $res->json('data');
+            $user = $data['user'];
+            $role = $user['role'];
+    
+            if (!in_array($role, ['admin', 'pengelola', 'user'])) {
+                return back()
+                    ->withInput($request->only('email'))
+                    ->withErrors(['email' => 'Hak akses role akun Anda tidak dikenali sistem.']);
+            }
+    
+            $request->session()->regenerate();
+
+            session([
+                'api_token' => $data['token'],
+                'user'      => $user,
+                'user_role' => $role,
+            ]);
+    
+            $route = match($role) {
+                'admin'     => 'admin.dashboard',
+                'pengelola' => 'pengelola.dashboard',
+                'user'      => 'user.dashboard',
+            };
+
+            return redirect()->route($route)->with('success', 'Selamat datang kembali, ' . $user['name'] . ' 🌿');
+
+        } catch (Exception $e) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['email' => 'Gagal terhubung ke server Citiisgo-API. Silakan coba lagi nanti.']);
+        }
+    }
+
+    /**
+     * Mengarahkan Wisatawan (User) yang sudah login ke halaman dasbor pemesanan wisata.
+     */
+    public function dashboard()
+    {
+        // Memastikan rute mengarah ke halaman utama user yang akan kita buat
+        return redirect()->route('user.wisata.index');
     }
  
     public function logout(Request $request)
     {
-        $this->api->logout();
-        $request->session()->flush();
-        return redirect()->route('login');
+        try {
+            if (session()->has('api_token')) {
+                $this->api->logout();
+            }
+        } catch (Exception $e) {}
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+ 
+        return redirect()->route('login')->with('success', 'Anda telah berhasil keluar.');
     }
 }
- 

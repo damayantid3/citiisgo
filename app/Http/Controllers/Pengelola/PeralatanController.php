@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Pengelola;
+
 use App\Http\Controllers\Controller;
 use App\Services\ApiService;
 use Illuminate\Http\Request;
@@ -8,29 +9,39 @@ use Illuminate\Http\Request;
 class PeralatanController extends Controller
 {
     public function __construct(private ApiService $api) {}
- 
+
     public function index()
     {
-        $peralatan = $this->api->getPeralatan()->json('data');
+        $res = $this->api->getPeralatan();
+        $peralatan = $res->successful() ? $res->json('data') : [];
+
         return view('pengelola.peralatan.index', compact('peralatan'));
     }
- 
+
     public function store(Request $request)
     {
-        $this->api->createPeralatan($request->except('_token'));
-        return redirect()->route('pengelola.peralatan')->with('success', 'Peralatan ditambahkan.');
+        $request->validate([
+            'nama'                 => 'required|string|max:255',
+            'total_stok'           => 'required|numeric|min:1',
+            'harga_sewa_per_hari'  => 'required|numeric|min:0',
+            'deskripsi'            => 'nullable|string',
+        ]);
+
+        $payload = $request->all();
+        $payload['stok_tersedia'] = $request->total_stok;
+
+        $res = $this->api->createPeralatan($payload);
+
+        if (!$res->successful()) {
+            return back()->withInput()->withErrors(['error' => $res->json('message') ?? 'Gagal menyimpan peralatan.']);
+        }
+
+        return redirect()->route('pengelola.peralatan')->with('success', 'Aset peralatan berhasil disimpan.');
     }
- 
-    public function update(Request $request, $id)
-    {
-        $this->api->updatePeralatan($id, $request->except(['_token','_method']));
-        return redirect()->route('pengelola.peralatan')->with('success', 'Peralatan diperbarui.');
-    }
- 
+
     public function destroy($id)
     {
-        $this->api->deletePeralatan($id);
-        return redirect()->route('pengelola.peralatan')->with('success', 'Peralatan dihapus.');
+        $res = $this->api->deletePeralatan($id);
+        return redirect()->route('pengelola.peralatan')->with('success', 'Peralatan berhasil dihapus.');
     }
 }
- 

@@ -1,275 +1,430 @@
 @extends('layouts.app')
-@section('title','Data Wisata')
-@section('topbar-title','🏞️ Data Wisata')
+@section('title', 'Manajemen Layanan & Paket - CitiisGo')
+@section('topbar-title', '⚙️ Layanan & Paket Citiis')
+
 @section('content')
-<div class="bc"><a href="{{ route('admin.dashboard') }}">🏠 Dashboard</a><span class="bc-sep">›</span><span>Data Wisata</span></div>
-<div class="ph">
-  <div><h1>🏞️ Data Wisata</h1><p>Kelola semua destinasi wisata yang terdaftar di CitiisGo</p></div>
-  <div class="ph-right">
-    <button class="btn btn-out btn-sm">📥 Export CSV</button>
-    <button class="btn btn-g" onclick="openModal('modalTambahWisata')">➕ Tambah Wisata</button>
-  </div>
+{{-- ── BREADCRUMB ── --}}
+<div class="flex items-center gap-2 text-xs text-slate-400 mb-5 font-medium">
+    <a href="{{ route('admin.dashboard') }}" class="hover:text-emerald-600 transition-colors">🏠 Dashboard</a>
+    <span class="text-slate-300">/</span>
+    <span class="text-slate-500">Layanan & Paket</span>
 </div>
 
-<div class="stats">
-  <div class="sc" style="--ac:var(--g600)"><div class="sc-lbl">Total Wisata</div><div class="sc-val">67</div><div class="sc-sub sc-up">▲ 4 baru bulan ini</div><div class="sc-ico">🏞️</div></div>
-  <div class="sc" style="--ac:var(--g400)"><div class="sc-lbl">Wisata Aktif</div><div class="sc-val">54</div><div class="sc-sub">80.6% dari total</div><div class="sc-ico">✅</div></div>
-  <div class="sc" style="--ac:var(--o500)"><div class="sc-lbl">Menunggu Review</div><div class="sc-val">8</div><div class="sc-sub sc-up">▲ 3 pengajuan baru</div><div class="sc-ico">⏳</div></div>
-  <div class="sc" style="--ac:var(--r700)"><div class="sc-lbl">Wisata Nonaktif</div><div class="sc-val">5</div><div class="sc-sub">Perlu tindakan</div><div class="sc-ico">❌</div></div>
+{{-- ── PAGE HEADER ── --}}
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">📦 Layanan & Paket Wisata Citiis</h1>
+        <p class="text-sm text-slate-500 font-medium mt-1">Kelola tiket masuk, wahana permainan, akomodasi, sewa alat, hingga paket bundling hemat.</p>
+    </div>
+    <div class="flex items-center gap-2.5 self-end lg:self-auto">
+        <button onclick="openAddModal()" class="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold text-xs px-4 h-10 rounded-xl shadow-md shadow-emerald-600/10 hover:bg-emerald-700 active:scale-95 transition-all duration-150 cursor-pointer border-none outline-none">
+            ➕ Tambah Layanan / Paket
+        </button>
+    </div>
 </div>
 
-<div class="card">
-  <div class="card-hd">
-    <div class="card-title">Semua Data Wisata</div>
-    <div style="display:flex;gap:7px">
-      <button class="btn btn-out btn-sm" id="btnGrid" onclick="setView('grid',this)">⊞ Grid</button>
-      <button class="btn btn-g btn-sm" id="btnList" onclick="setView('list',this)">☰ List</button>
+{{-- ── DYNAMIC STATS GRID ── --}}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden group border-t-4 border-t-emerald-600">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Layanan</div>
+        <div class="text-3xl font-extrabold text-slate-900 my-1.5 tracking-tight">{{ count($wisatas ?? []) }}</div>
+        <div class="text-xs text-slate-500 font-medium">Aktif terdaftar di server pusat</div>
+        <div class="absolute right-4 top-1/2 -translate-y-1/2 text-4xl opacity-10">📦</div>
     </div>
-  </div>
-  <div class="card-body" style="padding-bottom:0">
-    <div class="fbar">
-      <form method="GET" action="{{ route('admin.wisata') }}" style="display:contents">
-        <div class="si"><span style="font-size:13px;color:var(--tm)">🔍</span><input type="text" name="search" placeholder="Cari nama wisata..." value="{{ request('search') }}"></div>
-        <select name="kategori_id" class="sf" onchange="this.form.submit()">
-          <option value="">Semua Kategori</option>
-          @foreach($kat ?? [['id'=>1,'nama'=>'Alam'],['id'=>2,'nama'=>'Pantai'],['id'=>3,'nama'=>'Gunung'],['id'=>4,'nama'=>'Budaya'],['id'=>5,'nama'=>'Air Terjun']] as $k)
-          <option value="{{ $k['id'] }}" {{ request('kategori_id')==$k['id']?'selected':'' }}>{{ $k['nama'] }}</option>
-          @endforeach
-        </select>
-        <select name="status" class="sf" onchange="this.form.submit()">
-          <option value="">Semua Status</option>
-          <option value="active" {{ request('status')==='active'?'selected':'' }}>✅ Aktif</option>
-          <option value="pending" {{ request('status')==='pending'?'selected':'' }}>⏳ Pending</option>
-          <option value="inactive" {{ request('status')==='inactive'?'selected':'' }}>❌ Nonaktif</option>
-        </select>
-        <button type="submit" class="btn btn-out btn-sm">🔍 Cari</button>
-        @if(request('search')||request('kategori_id')||request('status'))
-          <a href="{{ route('admin.wisata') }}" class="btn btn-ghost btn-sm">✕ Reset</a>
-        @endif
-      </form>
-    </div>
-  </div>
+</div>
 
-  {{-- TABLE VIEW --}}
-  <div id="viewList">
-    <div class="tbl-wrap">
-      <table class="tbl">
-        <thead><tr>
-          <th style="width:30px"><input type="checkbox" id="selAll" onchange="document.querySelectorAll('.rc').forEach(c=>c.checked=this.checked)"></th>
-          <th>Wisata</th><th>Pengelola</th><th>Kategori</th><th>Tiket</th><th>Kuota/hari</th><th>Rating</th><th>Status</th><th>Aksi</th>
-        </tr></thead>
-        <tbody>
-          @php $dummies = [
-            ['🏔️','Curug Cimedang','Budi Kusuma','🌿 Alam','Rp 25.000',150,4.8,'active'],
-            ['🏖️','Pantai Sindangkerta','Dewi Permata','🌊 Pantai','Rp 10.000',300,4.3,'active'],
-            ['⛺','Bukit Teletubbies','Ridwan Setiadi','⛰️ Gunung','Rp 20.000',200,4.7,'pending'],
-            ['💧','Situ Gede','Muhammad Fauzi','💧 Danau','Rp 15.000',100,4.6,'active'],
-            ['🕌','Kampung Adat Naga','Siti Hartini','🏛️ Budaya','Rp 30.000',80,4.9,'inactive'],
-            ['🌊','Curug Dengdeng','Ahmad Setiawan','🌿 Alam','Rp 20.000',120,4.4,'active'],
-          ]; @endphp
-          @foreach($wisata['data'] ?? $dummies as $w)
-          <tr>
-            <td><input type="checkbox" class="rc"></td>
-            <td>
-              <div style="display:flex;align-items:center;gap:10px">
-                <div style="width:40px;height:40px;border-radius:9px;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">{{ $w[0] }}</div>
-                <div>
-                  <div class="fw7" style="font-size:13px">{{ $w[1] }}</div>
-                  <div class="text-sm text-muted">📍 Tasikmalaya, Jabar</div>
+{{-- ── DATA CONTAINER CARD (BLADE ARRAY) ── --}}
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-6">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <h3 class="text-sm font-bold text-slate-800">Daftar Katalog Produk & Layanan Citiis</h3>
+        <div class="inline-flex border border-slate-200 bg-slate-100 rounded-xl p-0.5 shadow-inner">
+            <button id="btnGrid" onclick="setView('grid')" class="px-3 py-1 text-xs font-bold rounded-lg transition-all duration-150 text-slate-500 hover:text-slate-700 cursor-pointer">⊞ Grid</button>
+            <button id="btnList" onclick="setView('list')" class="px-3 py-1 text-xs font-bold rounded-lg transition-all duration-150 bg-white text-emerald-700 shadow-sm border border-slate-200/50 cursor-pointer">☰ List</button>
+        </div>
+    </div>
+    
+    <div class="p-4 border-b border-slate-100 bg-white">
+        <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 h-9 flex-1 sm:max-w-xs focus-within:border-emerald-500 focus-within:bg-white transition-all duration-150">
+                <span class="text-slate-400 text-sm">🔍</span>
+                <input id="search-bar-array" type="text" placeholder="Pencarian katalog asinkron..." class="bg-transparent border-none outline-none text-xs text-slate-700 w-full font-medium">
+            </div>
+            <div class="text-[10px] font-bold text-slate-400">Penyelarasan integrasi database dari server peladen API.</div>
+        </div>
+    </div>
+
+    {{-- 📋 VIEW TYPE A: DATA TABLE (LIST VIEW) --}}
+    <div id="viewList" class="block">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs font-medium">
+                <thead>
+                    <tr class="bg-slate-50/70 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                        <th class="px-5 py-3">Nama Layanan / Paket Produk</th>
+                        <th class="px-5 py-3">Jenis Kategori</th>
+                        <th class="px-5 py-3">Tarif / Harga</th>
+                        <th class="px-5 py-3">Batas Kuota</th>
+                        <th class="px-5 py-3 text-center w-36">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                    @forelse($wisatas ?? [] as $item)
+                    <tr class="hover:bg-slate-50/60 transition-colors group/row">
+                        <td class="px-5 py-3.5">
+                            <div class="flex items-center gap-3">
+                                @php
+                                    $fotoPath = $item['foto'] ?? null;
+                                    $foto = $item['foto_url'] ?? ($fotoPath ? (str_starts_with($fotoPath, 'http') ? $fotoPath : 'http://127.0.0.1:8000/storage/' . $fotoPath) : 'https://images.unsplash.com/photo-1544161515-4ab6ce6bab34?w=800&q=80');
+                                    $itemArr = array_merge($item, ['foto_url' => $foto]);
+                                @endphp
+                                <img src="{{ $foto }}" class="w-10 h-10 object-cover rounded-xl border border-slate-100 shadow-sm bg-slate-50 flex-shrink-0" alt="{{ $item['nama'] }}">
+                                <div class="min-w-0">
+                                    <div class="font-extrabold text-slate-900 text-sm tracking-tight truncate">{{ $item['nama'] }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-5 py-3.5">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200/50">
+                                {{ is_array($item['kategori']) ? ($item['kategori']['nama'] ?? 'Umum') : ($item['kategori'] ?? 'Umum') }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-3.5 font-black text-emerald-700 text-sm">Rp {{ number_format($item['harga_tiket'], 0, ',', '.') }}</td>
+                        <td class="px-5 py-3.5 font-extrabold text-slate-600 text-xs">{{ $item['kuota_harian'] ?? '-' }} Slot/Hari</td>
+                        <td class="px-5 py-3.5">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="viewDetailModal({{ json_encode($itemArr) }})" class="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[10px] flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" title="Lihat Spesifikasi">👁️</button>
+                                <button onclick="viewEditModal({{ json_encode($itemArr) }})" class="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[10px] flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" title="Ubah Spesifikasi">✏️</button>
+                                <form action="{{ route('admin.wisata.destroy', $item['id']) }}" method="POST" class="inline-block m-0 p-0" onsubmit="return confirm('Yakin ingin menghapus data ini?');">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="w-7 h-7 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" title="Hapus Produk">🗑️</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="5" class="px-5 py-12 text-center text-slate-400 font-medium">
+                            <i class="fa-solid fa-ban text-2xl text-slate-300 mb-2 block"></i> Belum ada data layanan terdaftar.
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- 🗂️ VIEW TYPE B: RESPONSIVE GRID VIEW --}}
+    <div id="viewGrid" class="hidden p-5 bg-slate-50/50">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+            @foreach($wisatas ?? [] as $item)
+             @php
+                $fotoPathG = $item['foto'] ?? null;
+                $fotoG = $item['foto_url'] ?? ($fotoPathG ? (str_starts_with($fotoPathG, 'http') ? $fotoPathG : 'http://127.0.0.1:8000/storage/' . $fotoPathG) : 'https://images.unsplash.com/photo-1544161515-4ab6ce6bab34?w=800&q=80');
+                $itemArrG = array_merge($item, ['foto_url' => $fotoG]);
+            @endphp
+            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 group flex flex-col">
+                <div class="h-32 bg-emerald-50 relative overflow-hidden">
+                    <img src="{{ $fotoG }}" alt="{{ $item['nama'] }}" class="w-full h-full object-cover">
                 </div>
-              </div>
-            </td>
-            <td>
-              <div style="display:flex;align-items:center;gap:6px">
-                <div class="av" style="background:var(--o50);color:var(--o700);font-size:10px">{{ strtoupper(substr($w[2],0,2)) }}</div>
-                <span style="font-size:12px">{{ $w[2] }}</span>
-              </div>
-            </td>
-            <td><span class="badge bg-s" style="font-size:10.5px">{{ $w[3] }}</span></td>
-            <td class="fw7" style="color:var(--g700)">{{ $w[4] }}</td>
-            <td class="text-muted">{{ $w[5] }} org</td>
-            <td>
-              <div style="display:flex;align-items:center;gap:3px;font-size:12px">
-                <span style="color:#FFC107">⭐</span>
-                <strong>{{ $w[6] }}</strong>
-              </div>
-            </td>
-            <td>
-              @if($w[7]==='active')<span class="badge bg-s">✅ Aktif</span>
-              @elseif($w[7]==='pending')<span class="badge bg-w">⏳ Pending</span>
-              @else<span class="badge bg-d">❌ Nonaktif</span>@endif
-            </td>
-            <td>
-              <div style="display:flex;gap:4px">
-                <button class="btn btn-out btn-xs" title="Detail" onclick="openModal('modalDetailWisata')">👁️</button>
-                <button class="btn btn-out btn-xs" title="Edit" onclick="openModal('modalEditWisata')">✏️</button>
-                @if($w[7]==='pending')
-                  <button class="btn btn-g btn-xs" title="Setujui">✅</button>
-                  <button class="btn btn-red btn-xs" title="Tolak">❌</button>
-                @else
-                  <button class="btn btn-red btn-xs" title="Hapus" onclick="return confirm('Hapus wisata ini?')">🗑️</button>
-                @endif
-              </div>
-            </td>
-          </tr>
-          @endforeach
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  {{-- GRID VIEW --}}
-  <div id="viewGrid" style="display:none;padding:16px">
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">
-      @foreach($wisata['data'] ?? $dummies as $w)
-      <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow .15s;background:#fff" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.08)'" onmouseout="this.style.boxShadow='none'">
-        <div style="height:100px;background:linear-gradient(135deg,var(--g700),var(--g600));display:flex;align-items:center;justify-content:center;font-size:40px;position:relative">
-          {{ $w[0] }}
-          <span class="badge {{ $w[7]==='active'?'bg-s':($w[7]==='pending'?'bg-w':'bg-d') }}" style="position:absolute;top:8px;right:8px;font-size:9.5px">{{ ucfirst($w[7]) }}</span>
+                <div class="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                        <h4 class="font-extrabold text-slate-900 text-xs tracking-tight truncate group-hover:text-emerald-700 transition-colors">{{ $item['nama'] }}</h4>
+                        <p class="text-[10px] text-slate-400 font-extrabold uppercase mt-0.5 tracking-wider">🏷️ {{ is_array($item['kategori']) ? ($item['kategori']['nama'] ?? 'Umum') : ($item['kategori'] ?? 'Umum') }}</p>
+                        <div class="flex items-center justify-between border-y border-slate-100 py-1.5 my-3">
+                            <span class="font-black text-emerald-700 text-xs">Rp {{ number_format($item['harga_tiket'], 0, ',', '.') }}</span>
+                            <span class="font-bold text-[10px] text-slate-500">{{ $item['kuota_harian'] ?? '-' }} Kuota</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 w-full mt-1">
+                        <button onclick="viewDetailModal({{ json_encode($itemArrG) }})" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 font-extrabold text-[10px] h-8 rounded-xl border border-slate-200 active:scale-95 transition-transform cursor-pointer">👁️ Detail</button>
+                        <button onclick="viewEditModal({{ json_encode($itemArrG) }})" class="w-8 h-8 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center text-[10px] active:scale-95 transition-transform cursor-pointer">✏️</button>
+                    </div>
+                </div>
+            </div>
+            @endforeach
         </div>
-        <div style="padding:12px">
-          <div class="fw7" style="font-size:13.5px;margin-bottom:3px">{{ $w[1] }}</div>
-          <div style="font-size:11px;color:var(--tm);margin-bottom:8px">📍 Tasikmalaya · {{ $w[3] }}</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <span class="fw7" style="color:var(--g700);font-size:13px">{{ $w[4] }}</span>
-            <span style="font-size:11.5px;color:var(--tm)">⭐ {{ $w[6] }}</span>
-          </div>
-          <div style="display:flex;gap:5px">
-            <button class="btn btn-out btn-xs" style="flex:1" onclick="openModal('modalDetailWisata')">👁️ Detail</button>
-            <button class="btn btn-out btn-xs" onclick="openModal('modalEditWisata')">✏️</button>
-          </div>
-        </div>
-      </div>
-      @endforeach
     </div>
-  </div>
-
-  <div class="card-ft">
-    <span class="text-sm text-muted">Menampilkan <strong>1–{{ count($wisata['data'] ?? $dummies) }}</strong> dari <strong>67</strong> wisata</span>
-    <div class="pg">
-      <button class="pb">‹</button>
-      <button class="pb a">1</button><button class="pb">2</button><button class="pb">3</button><button class="pb">4</button><button class="pb">5</button>
-      <button class="pb">›</button>
-    </div>
-  </div>
 </div>
 
-{{-- MODAL TAMBAH WISATA --}}
-<div class="modal-bg" id="modalTambahWisata">
-  <div class="modal modal-lg">
-    <div class="modal-hd"><div class="modal-t">🏞️ Tambah Wisata Baru</div><button class="modal-x" onclick="closeModal('modalTambahWisata')">✕</button></div>
-    <form action="{{ route('admin.wisata.store') }}" method="POST">
-      @csrf
-      <div class="modal-bd">
-        <div class="fr">
-          <div class="fg"><label class="fl">Nama Wisata <span class="req">*</span></label><input name="nama" class="fc" placeholder="Nama destinasi wisata" required></div>
-          <div class="fg"><label class="fl">Kategori <span class="req">*</span></label>
-            <select name="kategori_id" class="fc" required>
-              <option value="">-- Pilih Kategori --</option>
-              @foreach($kat ?? [['id'=>1,'nama'=>'Alam'],['id'=>2,'nama'=>'Pantai'],['id'=>3,'nama'=>'Gunung'],['id'=>4,'nama'=>'Budaya']] as $k)
-              <option value="{{ $k['id'] }}">{{ $k['nama'] }}</option>
-              @endforeach
-            </select>
-          </div>
+{{-- ── MODAL: TAMBAH LAYANAN BARU ── --}}
+<div class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm items-center justify-center p-4 modal-backdrop" id="modalTambahWisata">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-base">📦 Tambah Layanan / Paket Baru</h3>
+            <button onclick="toggleModal('modalTambahWisata')" class="w-7 h-7 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 font-bold transition-all flex items-center justify-center text-xs cursor-pointer">✕</button>
         </div>
-        <div class="fg"><label class="fl">Pengelola <span class="req">*</span></label>
-          <select name="pengelola_id" class="fc" required>
-            <option value="">-- Pilih Pengelola --</option>
-            <option value="2">Budi Kusuma</option>
-            <option value="5">Dewi Permata</option>
-            <option value="6">Ridwan Setiadi</option>
-          </select>
-        </div>
-        <div class="fg"><label class="fl">Deskripsi <span class="req">*</span></label><textarea name="deskripsi" class="fc" rows="3" style="resize:vertical" required placeholder="Deskripsi lengkap wisata..."></textarea></div>
-        <div class="fg"><label class="fl">Alamat Lengkap <span class="req">*</span></label><input name="alamat" class="fc" placeholder="Kec. ..., Kab. ..., Provinsi" required></div>
-        <div class="fr3">
-          <div class="fg"><label class="fl">Latitude</label><input name="latitude" class="fc" placeholder="-7.3842"></div>
-          <div class="fg"><label class="fl">Longitude</label><input name="longitude" class="fc" placeholder="108.1247"></div>
-          <div class="fg"><label class="fl">Status</label>
-            <select name="status" class="fc">
-              <option value="active">✅ Aktif</option>
-              <option value="pending">⏳ Pending Review</option>
-              <option value="inactive">❌ Nonaktif</option>
-            </select>
-          </div>
-        </div>
-        <div class="fr">
-          <div class="fg"><label class="fl">Harga Tiket (Rp) <span class="req">*</span></label><input name="harga_tiket" type="number" class="fc" placeholder="25000" min="0" required></div>
-          <div class="fg"><label class="fl">Kuota Harian (orang) <span class="req">*</span></label><input name="kuota_harian" type="number" class="fc" placeholder="150" min="1" required></div>
-        </div>
-      </div>
-      <div class="modal-ft"><button type="button" class="btn btn-out" onclick="closeModal('modalTambahWisata')">Batal</button><button type="submit" class="btn btn-g">💾 Simpan Wisata</button></div>
-    </form>
-  </div>
-</div>
+        <form action="{{ route('admin.wisata.store') }}" method="POST" enctype="multipart/form-data" class="m-0">
+            @csrf
+            <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Nama Layanan / Paket <span class="text-rose-600">*</span></label>
+                        <input name="nama" type="text" placeholder="Contoh: Tiket Wahana / Paket Camping" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 transition-all">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Jenis Layanan (Kategori) <span class="text-rose-600">*</span></label>
+                        {{-- 💡 Langsung menembak port Backend API 8000 secara mutlak --}}
+                        <select name="kategori_id" id="tambah_kategori_id" required class="w-full border border-slate-200 bg-white rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 transition-all cursor-pointer">
+                            <option value="">Memuat Kategori...</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Harga Jual / Tarif (Rp) <span class="text-rose-600">*</span></label>
+                        <input name="harga_tiket" type="number" placeholder="Contoh: 15000" min="0" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Batas Kuota Harian (Orang/Unit) <span class="text-rose-600">*</span></label>
+                        <input name="kuota_harian" type="number" placeholder="Batas kapasitas tampung order" min="1" step="1" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Unggah Foto / Gambar Utama <span class="text-[10px] text-slate-400 font-normal">(Opsional)</span></label>
+                        <input class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-extrabold file:bg-emerald-50 file:text-brand-green file:cursor-pointer hover:file:bg-emerald-100" 
+                               type="file" name="foto" accept="image/*">
+                    </div>
+                </div>
 
-{{-- MODAL DETAIL WISATA --}}
-<div class="modal-bg" id="modalDetailWisata">
-  <div class="modal modal-lg">
-    <div class="modal-hd"><div class="modal-t">👁️ Detail Wisata</div><button class="modal-x" onclick="closeModal('modalDetailWisata')">✕</button></div>
-    <div class="modal-bd">
-      <div style="background:linear-gradient(135deg,var(--g700),var(--g600));border-radius:10px;padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;color:#fff">
-        <span style="font-size:36px">🏔️</span>
-        <div><div style="font-size:16px;font-weight:700">Curug Cimedang</div><div style="font-size:11.5px;opacity:.7">📍 Cikatomas, Tasikmalaya · 🌿 Alam</div></div>
-        <span class="badge bg-s" style="margin-left:auto">✅ Aktif</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-        @foreach([['Pengelola','Budi Kusuma'],['Harga Tiket','Rp 25.000'],['Kuota Harian','150 orang'],['Rating','⭐ 4.8 (128 ulasan)'],['Total Kunjungan','1.102 tamu/bln'],['Total Pendapatan','Rp 16,5jt/bln']] as [$k,$v])
-        <div style="background:var(--bg);border-radius:9px;padding:11px 13px">
-          <div style="font-size:10px;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">{{ $k }}</div>
-          <div class="fw7" style="font-size:13px">{{ $v }}</div>
-        </div>
-        @endforeach
-      </div>
-      <div class="fg"><label class="fl">Deskripsi</label>
-        <div style="background:var(--bg);border-radius:9px;padding:11px 13px;font-size:12.5px;color:var(--t2);line-height:1.6">Air terjun indah tersembunyi di antara hijaunya hutan tropis Tasikmalaya. Dengan ketinggian 25 meter, menawarkan pemandangan memukau.</div>
-      </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-500">Detail Fasilitas & Deskripsi Paket <span class="text-[10px] text-slate-400 font-normal">(Opsional)</span></label>
+                    <textarea name="deskripsi" rows="3" placeholder="Sebutkan fasilitas yang didapat pengunjung secara detail..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 resize-none"></textarea>
+                </div>
+                
+                <input type="hidden" name="status" value="active">
+                <input type="hidden" name="alamat" value="Area Kawasan Wisata Citiis Galunggung">
+            </div>
+            <div class="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-slate-100 bg-slate-50">
+                <button type="button" onclick="toggleModal('modalTambahWisata')" class="inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 font-bold text-xs px-4 h-9 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-transform cursor-pointer">Batal</button>
+                <button type="submit" class="inline-flex items-center justify-center gap-1 bg-emerald-600 text-white font-bold text-xs px-4 h-9 rounded-xl shadow-md shadow-emerald-600/10 hover:bg-emerald-700 active:scale-95 transition-transform cursor-pointer">💾 Simpan Item</button>
+            </div>
+        </form>
     </div>
-    <div class="modal-ft"><button type="button" class="btn btn-out" onclick="closeModal('modalDetailWisata')">Tutup</button><button class="btn btn-g" onclick="closeModal('modalDetailWisata');openModal('modalEditWisata')">✏️ Edit</button></div>
-  </div>
 </div>
 
-{{-- MODAL EDIT WISATA --}}
-<div class="modal-bg" id="modalEditWisata">
-  <div class="modal modal-lg">
-    <div class="modal-hd"><div class="modal-t">✏️ Edit Wisata</div><button class="modal-x" onclick="closeModal('modalEditWisata')">✕</button></div>
-    <form action="{{ route('admin.wisata.update',['id'=>1]) }}" method="POST">
-      @csrf @method('PUT')
-      <div class="modal-bd">
-        <div class="fr">
-          <div class="fg"><label class="fl">Nama Wisata</label><input name="nama" class="fc" value="Curug Cimedang"></div>
-          <div class="fg"><label class="fl">Status</label>
-            <select name="status" class="fc">
-              <option value="active" selected>✅ Aktif</option>
-              <option value="pending">⏳ Pending</option>
-              <option value="inactive">❌ Nonaktif</option>
-            </select>
-          </div>
+{{-- ── MODAL: DETAIL LAYANAN ── --}}
+<div class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm items-center justify-center p-4 modal-backdrop" id="modalDetailWisata">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-base">👁️ Detail Spesifikasi Layanan</h3>
+            <button onclick="toggleModal('modalDetailWisata')" class="w-7 h-7 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 font-bold flex items-center justify-center text-xs cursor-pointer">✕</button>
         </div>
-        <div class="fr">
-          <div class="fg"><label class="fl">Harga Tiket (Rp)</label><input name="harga_tiket" type="number" class="fc" value="25000"></div>
-          <div class="fg"><label class="fl">Kuota Harian</label><input name="kuota_harian" type="number" class="fc" value="150"></div>
+        <div class="p-6 space-y-4">
+            <div class="bg-gradient-to-r from-emerald-700 to-teal-800 rounded-2xl p-4 flex items-center gap-3.5 text-white shadow-md">
+                <img id="detail_foto" src="" class="w-16 h-16 object-cover rounded-xl border border-white/20 shadow-sm bg-emerald-900/40" alt="Foto Wisata">
+                <div>
+                    <h4 id="detail_nama" class="font-extrabold text-base tracking-tight">—</h4>
+                    <p id="detail_kategori" class="text-xs text-white/70 font-medium mt-0.5">—</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tarif / Harga Jual</div>
+                    <div id="detail_harga" class="font-bold text-emerald-700 text-xs mt-1">—</div>
+                </div>
+                <div class="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Batas Kuota Order</div>
+                    <div id="detail_kuota" class="font-bold text-slate-800 text-xs mt-1">—</div>
+                </div>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Fasilitas & Deskripsi</label>
+                <div id="detail_deskripsi" class="bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs font-medium text-slate-600 leading-relaxed max-h-36 overflow-y-auto custom-scrollbar">-</div>
+            </div>
         </div>
-        <div class="fg"><label class="fl">Kategori</label>
-          <select name="kategori_id" class="fc">
-            <option value="1" selected>🌿 Alam</option><option value="2">🌊 Pantai</option>
-          </select>
+        <div class="flex items-center justify-end px-6 py-3.5 border-t border-slate-100 bg-slate-50">
+            <button type="button" onclick="toggleModal('modalDetailWisata')" class="inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 font-bold text-xs px-4 h-9 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-transform cursor-pointer">Tutup</button>
         </div>
-        <div class="fg"><label class="fl">Deskripsi</label><textarea name="deskripsi" class="fc" rows="3" style="resize:vertical">Air terjun indah di Tasikmalaya.</textarea></div>
-        <div class="fg"><label class="fl">Alamat</label><input name="alamat" class="fc" value="Desa Cikatomas, Kec. Cikatomas, Tasikmalaya"></div>
-      </div>
-      <div class="modal-ft"><button type="button" class="btn btn-out" onclick="closeModal('modalEditWisata')">Batal</button><button type="submit" class="btn btn-g">💾 Update Wisata</button></div>
-    </form>
-  </div>
+    </div>
 </div>
+
+{{-- ── MODAL: EDIT LAYANAN ── --}}
+<div class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm items-center justify-center p-4 modal-backdrop" id="modalEditWisata">
+    <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-base">✏️ Edit Informasi Katalog</h3>
+            <button onclick="toggleModal('modalEditWisata')" class="w-7 h-7 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 font-bold flex items-center justify-center text-xs cursor-pointer">✕</button>
+        </div>
+        <form action="" method="POST" id="formEditWisataAdmin" enctype="multipart/form-data" class="m-0">
+            @csrf @method('PUT')
+            <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                <input type="hidden" id="edit_id" name="id">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Nama Layanan / Paket</label>
+                        <input name="nama" id="edit_nama" type="text" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 transition-all">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Jenis Kategori</label>
+                        <select name="kategori_id" id="edit_kategori" class="w-full border border-slate-200 bg-white rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 cursor-pointer">
+                            <option value="">-- Pilih Jenis Kategori --</option>
+                            @foreach($kategori_options ?? [] as $kat)
+                                <option value="{{ is_array($kat) ? ($kat['id'] ?? '') : ($kat->id ?? '') }}">
+                                    {{ is_array($kat) ? ($kat['nama'] ?? '') : ($kat->nama ?? '') }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Harga / Tarif Jual (Rp)</label>
+                        <input name="harga_tiket" id="edit_harga" type="number" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Batas Kuota Harian (Orang/Unit)</label>
+                        <input name="kuota_harian" id="edit_kuota" type="number" min="1" step="1" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-xs font-bold text-slate-500">Ganti Foto Gambar <span class="text-[10px] text-slate-400 font-normal">(Opsional)</span></label>
+                        <input class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-extrabold file:bg-emerald-50 file:text-brand-green file:cursor-pointer hover:file:bg-emerald-100" 
+                               type="file" name="foto" accept="image/*">
+                    </div>
+                </div>
+                
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-500">Detail Cakupan Fasilitas <span class="text-[10px] text-slate-400 font-normal">(Opsional)</span></label>
+                    <textarea name="deskripsi" id="edit_deskripsi" rows="3" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 resize-none"></textarea>
+                </div>
+                
+                <input type="hidden" name="alamat" value="Kawasan Wisata Pemandian Air Panas Citiis Galunggung">
+                <input type="hidden" name="status" value="active">
+            </div>
+            <div class="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-slate-100 bg-slate-50">
+                <button type="button" onclick="toggleModal('modalEditWisata')" class="inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 font-bold text-xs px-4 h-9 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-transform cursor-pointer">Batal</button>
+                <button type="submit" class="inline-flex items-center justify-center gap-1 bg-emerald-600 text-white font-bold text-xs px-4 h-9 rounded-xl shadow-md shadow-emerald-600/10 hover:bg-emerald-700 active:scale-95 transition-transform cursor-pointer">💾 Update Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form id="deleteWisataForm" method="POST" class="hidden">
+    @csrf @method('DELETE')
+</form>
 @endsection
+
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-function setView(v,btn){
-  document.getElementById('viewList').style.display=v==='list'?'block':'none';
-  document.getElementById('viewGrid').style.display=v==='grid'?'block':'none';
-  document.getElementById('btnGrid').className='btn btn-'+(v==='grid'?'g':'out')+' btn-sm';
-  document.getElementById('btnList').className='btn btn-'+(v==='list'?'g':'out')+' btn-sm';
-}
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success', title: 'Berhasil!', text: "{{ session('success') }}",
+            showConfirmButton: false, timer: 2500, customClass: { popup: 'rounded-2xl font-sans text-xs' }
+        });
+    @endif
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error', title: 'Gagal!', text: "{{ session('error') }}",
+            customClass: { popup: 'rounded-2xl font-sans text-xs' }
+        });
+    @endif
+
+    function setView(v) {
+        const listWrap = document.getElementById('viewList');
+        const gridWrap = document.getElementById('viewGrid');
+        const bGrid = document.getElementById('btnGrid');
+        const bList = document.getElementById('btnList');
+
+        if (v === 'list') {
+            listWrap.classList.remove('hidden'); listWrap.classList.add('block');
+            gridWrap.classList.remove('block'); gridWrap.classList.add('hidden');
+            bList.className = "px-3 py-1 text-xs font-bold rounded-lg bg-white text-emerald-700 shadow-sm border border-slate-200/50 cursor-pointer";
+            bGrid.className = "px-3 py-1 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-700 cursor-pointer";
+        } else {
+            gridWrap.classList.remove('hidden'); gridWrap.classList.add('block');
+            listWrap.classList.remove('block'); listWrap.classList.add('hidden');
+            bGrid.className = "px-3 py-1 text-xs font-bold rounded-lg bg-white text-emerald-700 shadow-sm border border-slate-200/50 cursor-pointer";
+            bList.className = "px-3 py-1 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-700 cursor-pointer";
+        }
+    }
+
+    function viewDetailModal(item) {
+        document.getElementById('detail_foto').src = item.foto_url || 'https://images.unsplash.com/photo-1544161515-4ab6ce6bab34?w=800&q=80';
+        document.getElementById('detail_nama').textContent = item.nama;
+        document.getElementById('detail_kategori').textContent = `🏷️ Kategori: ${item.kategori?.nama ?? (item.kategori ?? 'Umum')}`;
+        document.getElementById('detail_harga').textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.harga_tiket);
+        document.getElementById('detail_kuota').textContent = `${item.kuota_harian ?? 'Tidak terbatas'} slot / hari`;
+        document.getElementById('detail_deskripsi').textContent = item.deskripsi ?? 'Fasilitas tidak dispesifikasikan.';
+        
+        toggleModal('modalDetailWisata');
+    }
+
+    // 💡 Diperbaiki: Menembak peladen pusat (port 8000) secara absolut agar tidak 404/gagal
+    async function openAddModal() {
+        try {
+            const response = await fetch('http://127.0.0.1:8000/api/v1/kategori'); 
+            const result = await response.json();
+            
+            const selectEl = document.getElementById('tambah_kategori_id');
+            if (selectEl) {
+                selectEl.innerHTML = '<option value="">-- Pilih Jenis Layanan --</option>';
+                
+                const dataKategori = Array.isArray(result) ? result : (result.data || []);
+                
+                if (dataKategori.length > 0) {
+                    dataKategori.forEach(kat => {
+                        selectEl.innerHTML += `<option value="${kat.id}">${kat.nama}</option>`;
+                    });
+                } else {
+                    selectEl.innerHTML = '<option value="">Kategori belum tersedia</option>';
+                }
+            }
+        } catch(err) {
+            console.error("Gagal menarik opsi kategori:", err);
+            const selectEl = document.getElementById('tambah_kategori_id');
+            if(selectEl) selectEl.innerHTML = '<option value="">Gagal memuat kategori</option>';
+        }
+        
+        toggleModal('modalTambahWisata');
+    }
+
+    function viewEditModal(item) {
+        document.getElementById('edit_id').value = item.id;
+        document.getElementById('edit_nama').value = item.nama;
+        document.getElementById('edit_harga').value = item.harga_tiket;
+        document.getElementById('edit_kuota').value = item.kuota_harian;
+        document.getElementById('edit_deskripsi').value = item.deskripsi ?? '';
+
+        const editKategoriSelect = document.getElementById('edit_kategori');
+        const katId = item.kategori_id || item['kategori_id'] || (item.kategori ? (item.kategori.id || item.kategori['id']) : '');
+        
+        if(editKategoriSelect && katId) {
+            editKategoriSelect.value = katId;
+        }
+
+        const form = document.getElementById('formEditWisataAdmin');
+        form.action = "{{ route('admin.wisata.update', ':id') }}".replace(':id', item.id);
+
+        toggleModal('modalEditWisata');
+    }
+
+    function hapusWisata(id, nama) {
+        Swal.fire({
+            title: 'Hapus Item Katalog?', text: `Apakah Anda yakin ingin menghapus permanen destinasi wisata "${nama}"?`,
+            icon: 'warning', showCancelButton: true, confirmButtonColor: '#e11d48', cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal', customClass: { popup: 'rounded-2xl font-sans text-xs' }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.getElementById('deleteWisataForm');
+                form.action = "{{ route('admin.wisata.destroy', ':id') }}".replace(':id', id);
+                form.submit();
+            }
+        })
+    }
+
+    function toggleModal(id) {
+        const modal = document.getElementById(id);
+        if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        } else {
+            modal.classList.remove('flex'); modal.classList.add('hidden');
+        }
+    }
 </script>
 @endpush

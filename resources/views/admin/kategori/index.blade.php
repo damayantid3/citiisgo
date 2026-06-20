@@ -1,123 +1,191 @@
-{{-- ============================================================
-     ADMIN KATEGORI — resources/views/admin/kategori/index.blade.php
-     ============================================================ --}}
 @extends('layouts.app')
-@section('title','Kategori Wisata')
-@section('topbar-title','🏷️ Kategori Wisata')
+@section('title', 'Jenis Layanan Citiis - Admin')
+@section('topbar-title', '🗂️ Jenis Layanan')
+
 @section('content')
-<div class="bc"><a href="{{ route('admin.dashboard') }}">🏠</a><span class="bc-sep">›</span><span>Kategori Wisata</span></div>
-<div class="ph"><div><h1>🏷️ Kategori Wisata</h1><p>Kelola kategori dan klasifikasi destinasi wisata</p></div></div>
-
-<div class="g2">
-  {{-- FORM TAMBAH / EDIT --}}
-  <div class="card" style="margin-bottom:0">
-    <div class="card-hd"><div class="card-title" id="formKatTitle">➕ Tambah Kategori Baru</div></div>
-    <div class="card-body">
-      <form action="{{ route('admin.kategori.store') }}" method="POST" id="formKategori">
-        @csrf
-        <input type="hidden" name="_method" id="katMethod" value="POST">
-        <input type="hidden" name="kategori_id" id="katId">
-        <div class="fg">
-          <label class="fl">Ikon (emoji) <span class="req">*</span></label>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-            @foreach(['🌿','🌊','⛰️','🏛️','💧','🍽️','🏊','🌸','🎢','🦁','🏄','🚵'] as $ico)
-            <span onclick="selectEmoji('{{ $ico }}')" style="font-size:22px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:all .12s" class="emo-pick" onmouseover="this.style.background='var(--g50)'" onmouseout="if(!this.classList.contains('sel'))this.style.background='transparent'">{{ $ico }}</span>
-            @endforeach
-          </div>
-          <input name="ikon" id="katIkon" class="fc" placeholder="Atau ketik emoji..." style="text-align:center;font-size:18px">
-        </div>
-        <div class="fg"><label class="fl">Nama Kategori <span class="req">*</span></label><input name="nama" id="katNama" class="fc" placeholder="Mis: Wisata Bahari" required></div>
-        <div class="fg"><label class="fl">Deskripsi</label><textarea name="deskripsi" id="katDesc" class="fc" rows="3" style="resize:vertical" placeholder="Deskripsi singkat kategori..."></textarea></div>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button type="button" class="btn btn-out" onclick="resetKatForm()">🔄 Reset</button>
-          <button type="submit" class="btn btn-g">💾 Simpan Kategori</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  {{-- DAFTAR KATEGORI --}}
-  <div class="card" style="margin-bottom:0">
-    <div class="card-hd"><div class="card-title">📋 Daftar Kategori</div><span class="text-muted text-sm">{{ count($kategori ?? []) ?: 12 }} kategori</span></div>
-    <div class="tbl-wrap">
-      <table class="tbl">
-        <thead><tr><th>Ikon</th><th>Nama</th><th>Deskripsi</th><th>Wisata</th><th>Aksi</th></tr></thead>
-        <tbody>
-          @foreach($kategori ?? [
-            ['1','🌿','Alam','Destinasi wisata alam terbuka',24],
-            ['2','🌊','Pantai','Wisata pesisir dan bahari',12],
-            ['3','⛰️','Gunung','Pendakian dan pemandangan pegunungan',8],
-            ['4','🏛️','Budaya','Warisan budaya dan sejarah',7],
-            ['5','💧','Air Terjun','Curug dan air terjun alami',9],
-            ['6','🍽️','Kuliner','Wisata kuliner dan gastronomi',5],
-            ['7','🏊','Kolam Renang','Wahana air dan kolam renang',3],
-            ['8','🌸','Taman Bunga','Taman bunga dan kebun',4],
-          ] as $k)
-          @php $isArr = is_array($k) && isset($k[0]); @endphp
-          <tr>
-            <td style="font-size:22px">{{ $isArr ? $k[1] : $k['ikon'] }}</td>
-            <td class="fw7">{{ $isArr ? $k[2] : $k['nama'] }}</td>
-            <td class="text-muted text-sm" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $isArr ? $k[3] : ($k['deskripsi']??'-') }}</td>
-            <td><span class="badge bg-s" style="font-size:10px">{{ $isArr ? $k[4] : $k['wisata_count'] }} wisata</span></td>
-            <td>
-              <div style="display:flex;gap:4px">
-                <button class="btn btn-out btn-xs" onclick="editKat('{{ $isArr?$k[0]:$k['id'] }}','{{ $isArr?$k[1]:$k['ikon'] }}','{{ $isArr?$k[2]:$k['nama'] }}','{{ $isArr?$k[3]:($k['deskripsi']??'') }}')">✏️</button>
-                <form action="{{ route('admin.kategori.destroy',['id'=>$isArr?$k[0]:$k['id']]) }}" method="POST" style="margin:0">
-                  @csrf @method('DELETE')
-                  <button type="submit" class="btn btn-red btn-xs" onclick="return confirm('Hapus kategori ini?')">🗑️</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-          @endforeach
-        </tbody>
-      </table>
-    </div>
-  </div>
+{{-- ── BREADCRUMB ── --}}
+<div class="flex items-center gap-2 text-xs text-slate-400 mb-5 font-medium">
+    <span class="text-sm">🏠</span>
+    <span class="text-slate-300">/</span>
+    <a href="{{ route('admin.dashboard') }}" class="hover:text-slate-600 transition-colors">Dashboard</a>
+    <span class="text-slate-300">/</span>
+    <span class="text-slate-500">Jenis Layanan</span>
 </div>
 
-{{-- Statistik penggunaan kategori --}}
-<div class="card">
-  <div class="card-hd"><div class="card-title">📊 Kunjungan per Kategori (Bulan Ini)</div></div>
-  <div class="card-body">
-    <div style="display:flex;flex-direction:column;gap:10px">
-      @foreach([['🌿 Alam',1102,72,'var(--g600)'],['⛰️ Gunung',824,54,'var(--b700)'],['🌊 Pantai',611,40,'var(--o500)'],['💧 Air Terjun',490,32,'var(--p700)'],['🏛️ Budaya',421,28,'var(--y600)'],['🍽️ Kuliner',280,18,'var(--r700)']] as [$kat,$jml,$pct,$clr])
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="min-width:130px;font-size:12.5px;font-weight:600">{{ $kat }}</div>
-        <div class="progress" style="flex:1"><div class="progress-fill" style="width:{{ $pct }}%;background:{{ $clr }}"></div></div>
-        <div style="min-width:60px;text-align:right;font-size:12px;font-weight:700;color:{{ $clr }}">{{ number_format($jml) }}</div>
-        <div style="min-width:30px;text-align:right;font-size:11px;color:var(--tm)">{{ $pct }}%</div>
-      </div>
-      @endforeach
+{{-- ── PAGE HEADER ── --}}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 w-full">
+    <div class="text-left">
+        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">🗂️ Manajemen Jenis Layanan</h1>
+        <p class="text-sm text-slate-500 font-medium mt-1">Standarisasi rumpun kategori produk, fasilitas, dan akomodasi yang tersedia di Kawasan Citiis.</p>
     </div>
-  </div>
+    <div class="flex-shrink-0">
+        <button onclick="openModal('modalTambahKategori')" class="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold text-xs px-4 h-10 rounded-xl shadow-md shadow-emerald-600/10 hover:bg-emerald-700 active:scale-95 transition-all duration-150 cursor-pointer border-none outline-none">
+            ➕ Tambah Jenis Layanan
+        </button>
+    </div>
 </div>
+
+{{-- ── DATA TABLE CARD CONTAINER ── --}}
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden w-full mb-6">
+    <div class="overflow-x-auto w-full">
+        <table class="w-full text-left border-collapse text-xs font-medium">
+            <thead>
+                <tr class="bg-slate-50/70 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                    <th class="px-5 py-4 w-1/12">ID</th>
+                    <th class="px-5 py-4 w-1/2">Nama Rumpun Layanan</th>
+                    <th class="px-5 py-4 w-1/4">Slug Sistem</th>
+                    <th class="px-5 py-4 text-center w-1/6">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+                @forelse($kategori ?? [] as $k)
+                <tr class="hover:bg-slate-50/40 transition-colors">
+                    <td class="px-5 py-3.5 font-mono text-slate-400 font-bold">#{{ $k['id'] }}</td>
+                    <td class="px-5 py-3.5 font-bold text-slate-900">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-6 h-6 rounded-lg bg-emerald-50 font-bold text-[11px] text-emerald-700 flex items-center justify-center border border-emerald-200/20">
+                                📁
+                            </div>
+                            <span>{{ $k['nama'] }}</span>
+                        </div>
+                    </td>
+                    <td class="px-5 py-3.5 text-slate-500 font-mono">{{ $k['slug'] ?? \Illuminate\Support\Str::slug($k['nama']) }}</td>
+                    <td class="px-5 py-3.5">
+                        <div class="flex items-center justify-center gap-1.5">
+                            <button type="button" 
+                                    onclick="openEditModal(this)"
+                                    data-id="{{ $k['id'] }}"
+                                    data-nama="{{ $k['nama'] }}"
+                                    class="w-7 h-7 bg-white border border-slate-200 rounded-lg flex items-center justify-center hover:bg-slate-50 text-xs shadow-sm active:scale-95 transition-transform cursor-pointer" title="Ubah Nama Kategori">
+                                ✏️
+                            </button>
+                            <button type="button"
+                                    onclick="confirmDelete({{ $k['id'] }}, '{{ $k['nama'] }}')"
+                                    class="w-7 h-7 bg-white border border-rose-200 rounded-lg flex items-center justify-center hover:bg-rose-50 text-rose-600 text-xs shadow-sm active:scale-95 transition-transform cursor-pointer" title="Hapus Jenis Layanan">
+                                🗑️
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="4" class="px-5 py-12 text-center text-slate-400 font-medium text-xs">
+                        📭 Belum ada jenis kategori layanan terdaftar di database.
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{-- ── MODAL POPUP: TAMBAH KATEGORI ── --}}
+<div class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm items-center justify-center p-4 modal-backdrop" id="modalTambahKategori">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-base">➕ Tambah Jenis Layanan Baru</h3>
+            <button onclick="closeModal('modalTambahKategori')" class="w-7 h-7 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400 font-bold flex items-center justify-center text-xs cursor-pointer">✕</button>
+        </div>
+        <form action="{{ route('admin.kategori.store') }}" method="POST" class="m-0">
+            @csrf
+            <div class="p-6 space-y-4">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-500">Nama Rumpun / Jenis Layanan <span class="text-rose-600">*</span></label>
+                    <input type="text" name="nama" placeholder="Contoh: Kuliner & Catering, Spot Foto Premium" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 transition-all">
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-slate-100 bg-slate-50">
+                <button type="button" onclick="closeModal('modalTambahKategori')" class="inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 font-bold text-xs px-4 h-9 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-transform cursor-pointer">Batal</button>
+                <button type="submit" class="inline-flex items-center justify-center gap-1 bg-emerald-600 text-white font-bold text-xs px-4 h-9 rounded-xl shadow-md shadow-emerald-600/10 hover:bg-emerald-700 active:scale-95 transition-transform cursor-pointer">💾 Simpan Kategori</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- ── MODAL POPUP: EDIT KATEGORI ── --}}
+<div class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm items-center justify-center p-4 modal-backdrop" id="modalEditKategori">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-base">✏️ Edit Jenis Layanan</h3>
+            <button onclick="closeModal('modalEditKategori')" class="w-7 h-7 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-400 font-bold flex items-center justify-center text-xs cursor-pointer">✕</button>
+        </div>
+        <form action="" method="POST" id="formEditKategori" class="m-0">
+            @csrf @method('PUT')
+            <div class="p-6 space-y-4">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-500">Ubah Nama Jenis Layanan</label>
+                    <input type="text" name="nama" id="edit_nama" required class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:border-emerald-500 transition-all">
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-slate-100 bg-slate-50">
+                <button type="button" onclick="closeModal('modalEditKategori')" class="inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 font-bold text-xs px-4 h-9 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-transform cursor-pointer">Batal</button>
+                <button type="submit" class="inline-flex items-center justify-center gap-1 bg-emerald-600 text-white font-bold text-xs px-4 h-9 rounded-xl shadow-md shadow-emerald-600/10 hover:bg-emerald-700 active:scale-95 transition-transform cursor-pointer">💾 Update Kategori</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Hidden Core Delete Form --}}
+<form id="deleteKategoriForm" method="POST" class="hidden">
+    @csrf @method('DELETE')
+</form>
 @endsection
+
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-function selectEmoji(e){
-  document.getElementById('katIkon').value=e;
-  document.querySelectorAll('.emo-pick').forEach(el=>{el.style.background='transparent';el.classList.remove('sel')});
-  event.target.style.background='var(--g50)';event.target.style.borderColor='var(--g600)';event.target.classList.add('sel');
+// Menampilkan Popup Sukses Modern dari Session Flash Laravel
+@if(session('success'))
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: "{{ session('success') }}",
+        showConfirmButton: false,
+        timer: 2500,
+        customClass: { popup: 'rounded-2xl font-sans text-xs' }
+    });
+@endif
+
+function openEditModal(button) {
+    const id = button.getAttribute('data-id');
+    const nama = button.getAttribute('data-nama');
+
+    document.getElementById('edit_nama').value = nama;
+
+    const form = document.getElementById('formEditKategori');
+    form.action = "{{ route('admin.kategori.update', ':id') }}".replace(':id', id);
+
+    openModal('modalEditKategori');
 }
-function editKat(id,ico,nama,desc){
-  document.getElementById('katMethod').value='PUT';
-  document.getElementById('katId').value=id;
-  document.getElementById('katIkon').value=ico;
-  document.getElementById('katNama').value=nama;
-  document.getElementById('katDesc').value=desc;
-  document.getElementById('formKatTitle').textContent='✏️ Edit Kategori';
-  document.getElementById('formKategori').action='{{ url("admin/kategori") }}/'+id;
-  window.scrollTo({top:0,behavior:'smooth'});
+
+function confirmDelete(id, name) {
+    Swal.fire({
+        title: 'Hapus Jenis Layanan?',
+        text: `Apakah Anda yakin ingin menghapus "${name}"? Seluruh layanan di bawah rumpun ini akan terpengaruh.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e11d48',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal',
+        customClass: { popup: 'rounded-2xl font-sans' }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.getElementById('deleteKategoriForm');
+            form.action = '{{ route("admin.kategori.destroy", ":id") }}'.replace(':id', id);
+            form.submit();
+        }
+    });
 }
-function resetKatForm(){
-  document.getElementById('katMethod').value='POST';
-  document.getElementById('katId').value='';
-  document.getElementById('katIkon').value='';
-  document.getElementById('katNama').value='';
-  document.getElementById('katDesc').value='';
-  document.getElementById('formKatTitle').textContent='➕ Tambah Kategori Baru';
-  document.getElementById('formKategori').action='{{ route("admin.kategori.store") }}';
+
+function openModal(id) {
+    const modal = document.getElementById(id);
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    modal.classList.remove('flex'); modal.classList.add('hidden');
 }
 </script>
 @endpush
