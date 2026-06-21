@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\{Http, Session, Log};
+use Illuminate\Http\UploadedFile;
 
 /**
  * CitiisGo API Service - FULL INTEGRATED CHANNELS
@@ -31,7 +32,7 @@ class ApiService
                 'Content-Type' => 'application/json',
             ])
             ->timeout(30)
-            ->when(Session::get('api_token'), function ($request, $token) {
+            ->when(Session::get('api_token') ?? Session::get('token'), function ($request, $token) {
                 return $request->withToken($token);
             });
     }
@@ -150,11 +151,15 @@ class ApiService
     // ── Pengelola: Dashboard ─────────────────────────────────
     public function pengelolaDashboard(): Response
     {
-        // FIX ROUTE PATH: Menembak lurus ke endpoint pengelola/dashboard v1 yang sah
         return $this->client()->get('/pengelola/dashboard');
     }
 
-    // ── Pengelola: Wisata ────────────────────────────────────
+    // ── ⚡ Pengelola: Wisata (Tersinkronisasi & Steril) ─────
+    public function pengelolaWisataDetail(): Response
+    {
+        return $this->client()->get('/pengelola/wisata');
+    }
+
     public function pengelolaGetWisata(): Response
     {
         return $this->client()->get('/pengelola/wisata');
@@ -165,24 +170,16 @@ class ApiService
         return $this->client()->put('/pengelola/wisata', $data);
     }
 
-    public function pengelolaUpdateWisata(array $data): Response
+    public function pengelolaWisataUpdate(array $data): Response
     {
         return $this->client()->put('/pengelola/wisata', $data);
     }
 
-    public function pengelolaUploadGaleri(array $data, \Illuminate\Http\UploadedFile $foto): Response
+    public function pengelolaUploadGaleri(UploadedFile $file): Response
     {
-        $request = $this->client()->asMultipart();
-
-        foreach ($data as $key => $value) {
-            $request->attach($key, $value);
-        }
-
-        return $request->attach(
-            'foto', 
-            fn () => fopen($foto->getRealPath(), 'r'), 
-            $foto->getClientOriginalName()
-        )->post('/pengelola/wisata/galeri');
+        return $this->client()
+                    ->attach('image', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
+                    ->post('/pengelola/wisata/galeri');
     }
 
     public function pengelolaDeleteGaleri(int $id): Response

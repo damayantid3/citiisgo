@@ -1,167 +1,153 @@
 @extends('layouts.app')
-@section('title','Laporan & Analitik')
-@section('topbar-title','📊 Laporan & Analitik')
+@section('title', 'Laporan Agregasi Pusat - CitiisGo')
+@section('topbar-title', '📈 Rekapitulasi Laporan Kunjungan & Keuangan')
+
 @section('content')
-<div class="bc"><a href="{{ route('admin.dashboard') }}">🏠</a><span class="bc-sep">›</span><span>Laporan & Analitik</span></div>
-<div class="ph">
-  <div><h1>📊 Laporan & Analitik</h1><p>Ringkasan performa sistem CitiisGo</p></div>
-  <div class="ph-right">
-    <form method="GET" style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
-      <select name="periode" class="sf" onchange="this.form.submit()">
-        <option value="bulan_ini">Bulan Ini (Juni 2025)</option>
-        <option value="bulan_lalu">Bulan Lalu</option>
-        <option value="3_bulan">3 Bulan Terakhir</option>
-        <option value="tahun_ini">Tahun Ini</option>
-      </select>
-      <input type="date" name="dari" class="sf" value="{{ $laporan['periode']['dari'] ?? now()->startOfMonth()->format('Y-m-d') }}">
-      <span class="text-muted text-sm">—</span>
-      <input type="date" name="sampai" class="sf" value="{{ $laporan['periode']['sampai'] ?? now()->format('Y-m-d') }}">
-      <button type="submit" class="btn btn-g btn-sm">🔍 Terapkan</button>
+{{-- ── BREADCRUMB ── --}}
+<div class="flex items-center gap-2 text-[10px] text-slate-400 mb-4 font-semibold">
+    <a href="{{ route('admin.dashboard') }}" class="hover:text-emerald-600 transition-colors">🏠 Dashboard</a>
+    <span class="text-slate-300">/</span>
+    <span class="text-slate-500">Laporan Pusat</span>
+</div>
+
+{{-- ── PAGE HEADER & FILTER ── --}}
+<div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 mb-5">
+    <div>
+        <h1 class="text-lg font-black tracking-tight text-slate-800">📈 Laporan Agregasi Pusat Citiis</h1>
+        <p class="text-[11px] text-slate-500 font-medium mt-0.5">Audit dan rekapitulasi performa kawasan, data kunjungan, serta omset keuangan secara makro.</p>
+    </div>
+    
+    <form action="{{ route('admin.laporan') }}" method="GET" class="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl p-1.5 shadow-sm self-start xl:self-auto text-[10px]">
+        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 rounded-lg border border-slate-200">
+            <span class="text-[8px] font-black text-slate-400 uppercase tracking-wider">Dari</span>
+            <input type="date" name="dari" value="{{ $summary['periode_dari'] ?? '' }}" class="bg-transparent border-none outline-none font-bold text-slate-600">
+        </div>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 rounded-lg border border-slate-200">
+            <span class="text-[8px] font-black text-slate-400 uppercase tracking-wider">Sampai</span>
+            <input type="date" name="sampai" value="{{ $summary['periode_sampai'] ?? '' }}" class="bg-transparent border-none outline-none font-bold text-slate-600">
+        </div>
+        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-3 h-7 rounded-lg shadow-sm active:scale-95 transition-transform cursor-pointer outline-none border-none tracking-wide">
+            Filter
+        </button>
+        <button type="button" onclick="window.print()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold px-3 h-7 rounded-lg shadow-sm active:scale-95 transition-transform cursor-pointer">
+            🖨️ Cetak / PDF
+        </button>
     </form>
-    <button class="btn btn-out btn-sm">📥 Unduh PDF</button>
-  </div>
 </div>
 
-{{-- Summary --}}
-<div class="stats">
-  <div class="sc" style="--ac:var(--g700)"><div class="sc-lbl">Total Kunjungan</div><div class="sc-val">4.248</div><div class="sc-sub sc-up">▲ 14.2% vs periode lalu</div><div class="sc-ico">👣</div></div>
-  <div class="sc" style="--ac:var(--o500)"><div class="sc-lbl">Total Pendapatan</div><div class="sc-val">Rp 48,2jt</div><div class="sc-sub sc-up">▲ 18.7%</div><div class="sc-ico">💰</div></div>
-  <div class="sc" style="--ac:var(--b700)"><div class="sc-lbl">Total Transaksi</div><div class="sc-val">1.094</div><div class="sc-sub sc-up">▲ 11.3%</div><div class="sc-ico">🧾</div></div>
-  <div class="sc" style="--ac:var(--p700)"><div class="sc-lbl">Rating Rata-rata</div><div class="sc-val">4.7 ⭐</div><div class="sc-sub">Dari 128 ulasan</div><div class="sc-ico">⭐</div></div>
-</div>
-
-<div class="g2" style="margin-bottom:16px">
-  {{-- Bar chart trend --}}
-  <div class="card" style="margin-bottom:0">
-    <div class="card-hd"><div class="card-title">📈 Tren Kunjungan Harian</div></div>
-    <div class="card-body">
-      <div id="dailyBars" style="display:flex;align-items:flex-end;gap:3px;height:110px"></div>
-      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--tm)">
-        <span>1 Jun</span><span>7 Jun</span><span>14 Jun</span><span>21 Jun</span><span>28 Jun</span>
-      </div>
-    </div>
-  </div>
-
-  {{-- Distribusi per wisata --}}
-  <div class="card" style="margin-bottom:0">
-    <div class="card-hd"><div class="card-title">🗺️ Top 5 Wisata Terpopuler</div></div>
-    <div style="padding:0">
-      @foreach([
-        ['🏔️','Curug Cimedang',1102,'Rp 16,5jt',26],
-        ['⛺','Bukit Teletubbies',824,'Rp 12,4jt',19],
-        ['🏖️','Pantai Sindangkerta',611,'Rp 9,1jt',14],
-        ['💧','Situ Gede',490,'Rp 7,3jt',12],
-        ['🕌','Kampung Adat Naga',421,'Rp 6,2jt',10],
-      ] as [$ico,$nama,$kunjungan,$pendapatan,$pct])
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border)">
-        <div style="font-size:20px;width:30px;text-align:center;flex-shrink:0">{{ $ico }}</div>
-        <div style="flex:1;min-width:0">
-          <div class="fw7 text-sm" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $nama }}</div>
-          <div class="progress" style="margin-top:4px"><div class="progress-fill" style="width:{{ $pct }}%;background:var(--g600)"></div></div>
+{{-- ── STATS SUMMARY ── --}}
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative overflow-hidden group border-t-4 border-t-emerald-600">
+        <div class="text-[8px] font-black uppercase tracking-widest text-slate-400">Total Omset Bersih (Lunas)</div>
+        <div class="text-xl font-black text-emerald-700 mt-0.5 tracking-tight">
+            Rp {{ number_format($summary['total_pendapatan'] ?? 0, 0, ',', '.') }}
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div class="fw7 text-sm" style="color:var(--g700)">{{ number_format($kunjungan) }}</div>
-          <div style="font-size:10px;color:var(--tm)">{{ $pendapatan }}</div>
-        </div>
-      </div>
-      @endforeach
+        <div class="text-[9px] text-slate-500 font-bold mt-0.5">Akumulasi omset kotor terverifikasi sistem</div>
     </div>
-  </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative overflow-hidden group border-t-4 border-t-teal-600">
+        <div class="text-[8px] font-black uppercase tracking-widest text-slate-400">Total Transaksi Sukses</div>
+        <div class="text-xl font-black text-slate-800 mt-0.5 tracking-tight">
+            {{ number_format($summary['total_transaksi'] ?? 0, 0, ',', '.') }} Pesanan
+        </div>
+        <div class="text-[9px] text-slate-500 font-bold mt-0.5">Total reservasi tiket, camping, & sewa alat</div>
+    </div>
 </div>
 
-<div class="g2" style="margin-bottom:16px">
-  {{-- Pendapatan per layanan --}}
-  <div class="card" style="margin-bottom:0">
-    <div class="card-hd"><div class="card-title">💳 Pendapatan per Layanan</div></div>
-    <div class="card-body">
-      @foreach([
-        ['🎫 Reservasi Tiket','Rp 18,4jt',72,'var(--g600)',4248],
-        ['⛺ Booking Camping','Rp 12,8jt',50,'var(--o500)',280],
-        ['🏨 Booking Penginapan','Rp 10,5jt',41,'var(--b700)',192],
-        ['🎒 Sewa Peralatan','Rp 6,5jt',25,'var(--p700)',374],
-      ] as [$lbl,$val,$pct,$clr,$jml])
-      <div style="margin-bottom:13px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
-          <span>{{ $lbl }}</span>
-          <div style="display:flex;gap:8px;align-items:center">
-            <span class="text-muted text-sm">{{ number_format($jml) }} transaksi</span>
-            <strong style="color:{{ $clr }}">{{ $val }}</strong>
-          </div>
+{{-- ── RINCIAN LAPORAN DATA TABLE ── --}}
+<div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mb-5">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+        <h3 class="text-xs font-black text-slate-800 tracking-tight">Rincian Log Reservasi Kunjungan</h3>
+        <span class="text-[8px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-200">
+            Periode: {{ \Carbon\Carbon::parse($summary['periode_dari'])->format('d M Y') }} - {{ \Carbon\Carbon::parse($summary['periode_sampai'])->format('d M Y') }}
+        </span>
+    </div>
+    
+    <div class="p-3 border-b border-slate-100 bg-white print:hidden">
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-8 w-full sm:max-w-xs focus-within:border-emerald-500 transition-all text-[11px]">
+            <span class="text-slate-400 text-xs">🔍</span>
+            <input id="search-bar-laporan" type="text" placeholder="Pencarian log rincian laporan..." class="bg-transparent border-none outline-none text-[11px] text-slate-700 w-full font-bold">
         </div>
-        <div class="progress"><div class="progress-fill" style="width:{{ $pct }}%;background:{{ $clr }}"></div></div>
-      </div>
-      @endforeach
-      <div style="border-top:1px solid var(--border);padding-top:11px;display:flex;justify-content:space-between;font-size:13.5px;font-weight:700">
-        <span>Total Pendapatan</span><span style="color:var(--g700)">Rp 48,2jt</span>
-      </div>
     </div>
-  </div>
 
-  {{-- Laporan per pengelola --}}
-  <div class="card" style="margin-bottom:0">
-    <div class="card-hd"><div class="card-title">👤 Pendapatan per Pengelola</div></div>
-    <div class="tbl-wrap">
-      <table class="tbl">
-        <thead><tr><th>Pengelola</th><th>Wisata</th><th>Kunjungan</th><th>Pendapatan</th></tr></thead>
-        <tbody>
-          @foreach([['Budi Kusuma','Curug Cimedang',1102,'Rp 16,5jt'],['Ridwan Setiadi','Bukit Teletubbies',824,'Rp 12,4jt'],['Dewi Permata','Pantai Sindangkerta',611,'Rp 9,1jt'],['M. Fauzi','Situ Gede',490,'Rp 7,3jt']] as [$p,$w,$k,$d])
-          <tr>
-            <td class="fw7">{{ $p }}</td><td class="text-sm text-muted">{{ $w }}</td>
-            <td class="fw7">{{ number_format($k) }}</td>
-            <td class="fw7" style="color:var(--g700)">{{ $d }}</td>
-          </tr>
-          @endforeach
-        </tbody>
-      </table>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-[11px] font-medium text-slate-700">
+            <thead>
+                <tr class="bg-slate-50/70 border-b border-slate-200 text-slate-400 font-black uppercase tracking-wider">
+                    <th class="px-4 py-3">Waktu Dibuat</th>
+                    <th class="px-4 py-3">Item / Layanan</th>
+                    <th class="px-4 py-3">Atas Nama User</th>
+                    <th class="px-4 py-3">Tarif / Slot</th>
+                    <th class="px-4 py-3 text-center">Qty</th>
+                    <th class="px-4 py-3">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100" id="table-laporan-data">
+                @forelse($rincian ?? [] as $log)
+                <tr class="hover:bg-slate-50/40 transition-colors">
+                    <td class="px-4 py-3 font-bold text-slate-400 whitespace-nowrap">
+                        {{ \Carbon\Carbon::parse($log['created_at'])->format('d/m/Y H:i') }}
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="font-black text-slate-800 tracking-tight">
+                            {{ $log['wisata']['nama'] ?? $log['nama_layanan'] ?? 'Layanan / Tiket' }}
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="font-bold text-slate-600">{{ $log['nama_pemesan'] ?? $log['user']['name'] ?? '-' }}</div>
+                    </td>
+                    <td class="px-4 py-3 font-black text-emerald-600 whitespace-nowrap">
+                        Rp {{ number_format($log['harga_tiket'] ?? $log['tarif'] ?? 0, 0, ',', '.') }}
+                    </td>
+                    <td class="px-4 py-3 font-black text-slate-600 text-center">
+                        {{ $log['jumlah_tiket'] ?? $log['kuota_pesan'] ?? $log['qty'] ?? 1 }}
+                    </td>
+                    <td class="px-4 py-3 font-black text-slate-800 whitespace-nowrap">
+                        @php
+                            $harga = $log['harga_tiket'] ?? $log['tarif'] ?? 0;
+                            $qty = $log['jumlah_tiket'] ?? $log['kuota_pesan'] ?? $log['qty'] ?? 1;
+                            $subtotal = $harga * $qty;
+                        @endphp
+                        Rp {{ number_format($subtotal, 0, ',', '.') }}
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="px-4 py-10 text-center text-slate-400 font-bold">
+                        <i class="fa-solid fa-ban text-lg text-slate-300 mb-1 block"></i> Belum ada log transaksi reservasi pada rentang tanggal ini.
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
-  </div>
-</div>
-
-{{-- Detail laporan tabel --}}
-<div class="card">
-  <div class="card-hd">
-    <div class="card-title">📋 Detail Laporan Kunjungan</div>
-    <div style="display:flex;gap:7px">
-      <button class="btn btn-out btn-sm">📥 CSV</button>
-      <button class="btn btn-out btn-sm">📄 PDF</button>
-    </div>
-  </div>
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead><tr><th>Pengelola</th><th>Wisata</th><th>Periode</th><th>Kunjungan</th><th>Tiket</th><th>Camping</th><th>Penginapan</th><th>Sewa Alat</th><th>Total</th></tr></thead>
-      <tbody>
-        @foreach([
-          ['Budi Kusuma','Curug Cimedang','Jun 2025','1.102','Rp 8,24jt','Rp 4,10jt','Rp 2,80jt','Rp 1,40jt','Rp 16,54jt'],
-          ['Ridwan Setiadi','Bukit Teletubbies','Jun 2025','824','Rp 5,00jt','Rp 4,80jt','Rp 1,60jt','Rp 1,00jt','Rp 12,40jt'],
-          ['Dewi Permata','Pantai Sindangkerta','Jun 2025','611','Rp 3,10jt','Rp 2,40jt','Rp 2,20jt','Rp 1,40jt','Rp 9,10jt'],
-          ['M. Fauzi','Situ Gede','Jun 2025','490','Rp 2,45jt','Rp 1,80jt','Rp 1,90jt','Rp 1,15jt','Rp 7,30jt'],
-        ] as $r)
-        <tr>
-          @foreach($r as $i=>$v)
-          <td class="{{ $i===0||$i===1?'fw7':'' }} {{ $i===8?'fw7':'text-muted' }}" style="{{ $i===8?'color:var(--g700)':'' }}">{{ $v }}</td>
-          @endforeach
-        </tr>
-        @endforeach
-      </tbody>
-    </table>
-  </div>
 </div>
 @endsection
+
 @push('scripts')
 <script>
-(function(){
-  const vals=[120,145,132,168,189,210,198,224,156,178,134,145,167,190,201,215,178,234,248,260,242,218,190,205,232,248,267,280];
-  const max=Math.max(...vals);
-  const c=document.getElementById('dailyBars');
-  vals.forEach((v,i)=>{
-    const b=document.createElement('div');
-    b.style.cssText=`flex:1;border-radius:2px 2px 0 0;background:${i===vals.length-1?'var(--o500)':'var(--g500)'};min-width:6px;cursor:pointer;transition:opacity .15s`;
-    b.style.height=Math.round(v/max*100)+'%';
-    b.title=`Hari ${i+1}: ${v} kunjungan`;
-    b.addEventListener('mouseenter',()=>b.style.opacity='.7');
-    b.addEventListener('mouseleave',()=>b.style.opacity='1');
-    c.appendChild(b);
-  });
-})();
+    function filterLaporan(query) {
+        const rows = document.querySelectorAll('#table-laporan-data tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if(text.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    const searchBar = document.getElementById('search-bar-laporan');
+    if(searchBar) {
+        searchBar.addEventListener('input', function(e) {
+            filterLaporan(e.target.value.toLowerCase());
+        });
+    }
 </script>
+<style type="text/css" media="print">
+    @page { size: landscape; margin: 10mm; }
+    body { font-size: 11px !important; }
+    .print\:hidden { display: none !important; }
+    .xl\:justify-between { justify-content: space-between !important; }
+</style>
 @endpush

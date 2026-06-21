@@ -8,74 +8,53 @@ use Illuminate\Http\Request;
 
 class WisataController extends Controller
 {
-    public function __construct(private ApiService $api) {}
- 
+    protected $api;
+
+    public function __construct(ApiService $api) 
+    {
+        $this->api = $api;
+    }
+
     public function index()
     {
-        $res = $this->api->pengelolaGetWisata();
-        
-        // Proteksi jika server API down, kunci dengan array kosong agar view tidak crash
-        $wisata = $res->successful() ? ($res->json('data') ?? []) : [];
-
-        if (!$res->successful()) {
-            session()->flash('error', 'Gagal memuat data informasi wisata dari server.');
-        }
+        // Menarik data dari API server pusat
+        $res = $this->api->pengelolaWisataDetail(); // Sesuaikan dengan method ApiService Anda
+        $wisata = $res->successful() ? $res->json('data') : [];
 
         return view('pengelola.wisata.index', compact('wisata'));
     }
- 
+
     public function update(Request $request)
     {
-        // 1. Validasi Input Informasi Wisata di Sisi Web
-        $validated = $request->validate([
-            'nama'      => 'required|string|max:255',
-            'deskripsi' => 'required|string',
-            'lokasi'    => 'required|string',
-            // Tambahkan field lain yang diperlukan oleh form wisata Anda
-        ]);
+        $res = $this->api->pengelolaWisataUpdate($request->all());
 
-        // 2. Tembak ke API dengan data aman
-        $res = $this->api->pengelolaUpdateWisata($validated);
- 
         if (!$res->successful()) {
-            return back()
-                ->withInput()
-                ->withErrors(['error' => $res->json('message') ?? 'Gagal memperbarui data wisata.']);
+            return back()->withErrors(['error' => $res->json('message') ?? 'Gagal memperbarui data profil wahana wisata.']);
         }
 
-        return redirect()->route('pengelola.wisata')->with('success', 'Data wisata berhasil diperbarui.');
+        return redirect()->route('pengelola.wisata')->with('success', 'Profil wahana / objek wisata berhasil diperbarui.');
     }
- 
+
     public function uploadGaleri(Request $request)
     {
-        // 1. Validasi File Gambar di Sisi Web (Maksimal 4MB)
-        $request->validate([
-            'foto' => 'required|image|mimes:jpeg,png,jpg,webp|max:4096',
-            'keterangan' => 'nullable|string|max:255' // Mengantisipasi jika ada input teks judul/caption foto
-        ]);
+        // Fungsi upload galeri ke server port 8000 via API
+        $res = $this->api->pengelolaUploadGaleri($request->file('image'));
 
-        // 2. Pilah data teks pendukung
-        $dataTeks = $request->only(['keterangan', 'wisata_id']); 
-
-        // 3. Tembak ke ApiService yang sudah kita perbaiki format multipart-nya kemarin
-        $res = $this->api->pengelolaUploadGaleri($dataTeks, $request->file('foto'));
- 
-        // 4. Periksa apakah API sukses menyimpan gambarnya
-        if (!$res->successful() || !$res->json('success')) {
-            return back()->withErrors(['error' => $res->json('message') ?? 'Gagal mengunggah foto ke server.']);
+        if (!$res->successful()) {
+            return back()->withErrors(['error' => 'Gagal mengunggah foto galeri.']);
         }
 
-        return redirect()->route('pengelola.wisata')->with('success', 'Foto galeri berhasil diunggah.');
+        return redirect()->route('pengelola.wisata')->with('success', 'Foto galeri berhasil ditambahkan.');
     }
- 
+
     public function deleteGaleri($id)
     {
         $res = $this->api->pengelolaDeleteGaleri($id);
 
         if (!$res->successful()) {
-            return back()->withErrors(['error' => $res->json('message') ?? 'Gagal menghapus foto dari galeri.']);
+            return back()->withErrors(['error' => 'Gagal menghapus foto galeri.']);
         }
 
         return redirect()->route('pengelola.wisata')->with('success', 'Foto galeri berhasil dihapus.');
     }
-}
+} 

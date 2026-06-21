@@ -83,14 +83,14 @@
             <form action="{{ route('logout') }}" method="POST" class="m-0 p-0 w-full">
                 @csrf
                 <button type="submit" onclick="return confirm('Apakah Anda yakin ingin melakukan logout?')"
-                        class="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-rose-400 hover:text-rose-300 rounded-xl hover:bg-rose-500/10 transition-all duration-150 border-none bg-transparent outline-none font-bold cursor-pointer text-left w-full">
+                        class="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-rose-400 hover:text-rose-300 rounded-xl hover:bg-rose-500/10 transition-all duration-150 border-none bg-transparent outline-none font-bold cursor-pointer text-left">
                     <span>🚪</span> <span>Logout</span>
                 </button>
             </form>
         </div>
     </nav>
 
-    {{-- ── TOPBAR CONTENT PANEL ── --}}
+    {{-- ── TOPBAR CONTENT PANEL (STERILISASI TOMBOL KOSONG) ── --}}
     <header class="fixed top-0 right-0 left-60 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between px-6 z-40 shadow-sm">
         <div class="flex items-center gap-4 flex-1 min-w-0">
             <div class="text-slate-800 font-bold text-base tracking-tight">@yield('topbar-title', 'Dashboard')</div>
@@ -103,18 +103,23 @@
         </div>
         
         <div class="flex items-center gap-3">
-            <button class="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center text-sm relative transition-all duration-150 shadow-sm" title="Notifikasi">
-                🔔<div class="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border border-white"></div>
+            {{-- Indikator Tanda Notifikasi Realtime Pusat --}}
+            <button class="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center text-sm relative transition-all duration-150 shadow-sm" title="Aktivitas Sistem">
+                🔔<div class="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border border-white animate-ping"></div>
             </button>
-            <button class="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center text-sm transition-all duration-150 shadow-sm" title="Bantuan">❓</button>
+            
             <div class="h-6 w-[1px] bg-slate-200 mx-1"></div>
+
+            {{-- Identitas Akun Sesi Login --}}
             <div class="flex items-center gap-2.5 pl-1">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs bg-amber-500 shadow-md">
-                    {{ strtoupper(substr(session('user.nama', 'U'), 0, 2)) }}
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs bg-emerald-600 shadow-md uppercase">
+                    {{ strtoupper(substr(Auth::guard('admin')->user()->name ?? 'AD', 0, 2)) }}
                 </div>
-                <div class="hidden md:block text-left">
-                    <div class="text-slate-800 text-xs font-bold leading-3">{{ session('user.nama', 'User') }}</div>
-                    <div class="text-slate-400 text-[10px] font-medium mt-1 capitalize">{{ session('user_role', '') }}</div>
+                <div class="hidden md:block text-left leading-tight">
+                    <div class="text-slate-800 text-xs font-extrabold tracking-tight">
+                        {{ Auth::guard('admin')->user()->name ?? 'Administrator' }}
+                    </div>
+                    <div class="text-emerald-700 text-[9px] font-black uppercase tracking-wider mt-1">Admin Pusat</div>
                 </div>
             </div>
         </div>

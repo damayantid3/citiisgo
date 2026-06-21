@@ -4,104 +4,117 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Http;
 
 class WisataController extends Controller
 {
+    private $apiBaseUrl = 'http://127.0.0.1:8000/api/v1';
+
     public function index()
     {
-        // Simulasi data statis (mockup) agar halaman langsung tampil dan bisa dikelola
-        $wisatas = Session::get('mock_wisatas', [
-            [
-                'id' => 1,
-                'nama' => 'Tiket Masuk Pemandian Air Hangat Citiis',
-                'kategori' => ['id' => 1, 'nama' => 'Tiket Masuk & Fasilitas Utama'],
-                'harga_tiket' => 15000,
-                'kuota_harian' => 100,
-                'deskripsi' => 'Akses masuk kawasan wisata pemandian air panas alami Citiis Galunggung.',
-                'foto_url' => 'https://images.unsplash.com/photo-1544161515-4ab6ce6bab34?w=800&q=80',
-                'status' => 'active'
-            ],
-            [
-                'id' => 2,
-                'nama' => 'Paket Camping Ground Citiis',
-                'kategori' => ['id' => 2, 'nama' => 'Akomodasi & Camping'],
-                'harga_tiket' => 35000,
-                'kuota_harian' => 50,
-                'deskripsi' => 'Sewa lahan camping ground di area kawasan wisata.',
-                'foto_url' => 'https://images.unsplash.com/photo-1504280390367-361c6d9d37f4?w=800&q=80',
-                'status' => 'active'
-            ]
-        ]);
+        $wisatas = [];
+        $kategori_options = [];
 
-        // Mockup data kategori untuk dropdown select
-        $kategori_options = [
-            ['id' => 1, 'nama' => 'Tiket Masuk & Fasilitas Utama'],
-            ['id' => 2, 'nama' => 'Akomodasi & Camping'],
-            ['id' => 3, 'nama' => 'Wahana Permainan']
-        ];
+        try {
+            $responseWisata = Http::get("{$this->apiBaseUrl}/admin/wisata");
+            if ($responseWisata->successful()) {
+                $result = $responseWisata->json();
+                $wisatas = $result['data']['data'] ?? ($result['data'] ?? []);
+            }
+            
+            $responseKategori = Http::get("{$this->apiBaseUrl}/kategori");
+            if ($responseKategori->successful()) {
+                $katResult = $responseKategori->json();
+                $kategori_options = $katResult['data'] ?? [];
+            }
+        } catch (\Exception $e) {
+            $wisatas = [];
+            $kategori_options = [];
+        }
         
         return view('admin.wisata.index', compact('wisatas', 'kategori_options'));
     }
 
     public function store(Request $request)
     {
-        $wisatas = Session::get('mock_wisatas', []);
-        
-        $newId = count($wisatas) > 0 ? max(array_column($wisatas, 'id')) + 1 : 1;
+        try {
+            $formData = $request->except('foto');
+            
+            if (!isset($formData['alamat'])) {
+                $formData['alamat'] = 'Area Kawasan Wisata Citiis Galunggung';
+            }
+            if (!isset($formData['status'])) {
+                $formData['status'] = 'active';
+            }
 
-        $newItem = [
-            'id' => $newId,
-            'nama' => $request->nama,
-            'kategori' => [
-                'id' => $request->kategori_id, 
-                'nama' => $request->kategori_id == 1 ? 'Tiket Masuk & Fasilitas Utama' : 'Pilihan Lainnya'
-            ],
-            'harga_tiket' => (int)str_replace('.', '', $request->harga_tiket),
-            'kuota_harian' => $request->kuota_harian,
-            'deskripsi' => $request->deskripsi ?? '-',
-            'foto_url' => 'https://images.unsplash.com/photo-1566336439368-0115324db633?w=800&q=80',
-            'status' => 'active'
-        ];
+            if ($request->hasFile('foto')) {
+                $file = $request->file('foto');
+                $response = Http::asMultipart()
+                    ->attach('foto', file_get_contents($file->getPathname()), $file->getClientOriginalName())
+                    ->post("{$this->apiBaseUrl}/admin/wisata", $formData);
+            } else {
+                $response = Http::post("{$this->apiBaseUrl}/admin/wisata", $formData);
+            }
 
-        $wisatas[] = $newItem;
-        Session::put('mock_wisatas', $wisatas);
+            if ($response->successful()) {
+                return redirect()->route('admin.wisata')->with('success', 'Data wisata berhasil disimpan ke server pusat.');
+            }
 
-        return redirect()->route('admin.wisata')->with('success', 'Data layanan berhasil disimpan (Demo Mode).');
+            return redirect()->route('admin.wisata')->with('error', 'Gagal menyimpan ke API: ' . $response->body());
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.wisata')->with('error', 'Koneksi ke API pusat terputus: ' . $e->getMessage());
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $wisatas = Session::get('mock_wisatas', []);
-        
-        foreach ($wisatas as $key => $item) {
-            if ($item['id'] == $id) {
-                $wisatas[$key]['nama'] = $request->nama;
-                $wisatas[$key]['kategori_id'] = $request->kategori_id;
-                $wisatas[$key]['kategori'] = [
-                    'id' => $request->kategori_id,
-                    'nama' => $request->kategori_id == 1 ? 'Tiket Masuk & Fasilitas Utama' : 'Akomodasi & Camping'
-                ];
-                $wisatas[$key]['harga_tiket'] = (int)str_replace('.', '', $request->harga_tiket);
-                $wisatas[$key]['kuota_harian'] = $request->kuota_harian;
-                $wisatas[$key]['deskripsi'] = $request->deskripsi ?? '-';
-                break;
-            }
-        }
+        try {
+            $formData = $request->except('foto');
 
-        Session::put('mock_wisatas', $wisatas);
-        return redirect()->route('admin.wisata')->with('success', 'Data layanan berhasil diperbarui (Demo Mode).');
+            if (isset($formData['harga_tiket'])) {
+                $formData['harga_tiket'] = str_replace('.', '', $formData['harga_tiket']);
+            }
+            if (!isset($formData['alamat'])) {
+                $formData['alamat'] = 'Kawasan Wisata Pemandian Air Panas Citiis Galunggung';
+            }
+            if (!isset($formData['status'])) {
+                $formData['status'] = 'active';
+            }
+
+            // ⚡ Mengirim payload dengan parameter _method=PUT sebagai bypass untuk metode POST biner
+            if ($request->hasFile('foto')) {
+                $file = $request->file('foto');
+                $response = Http::asMultipart()
+                    ->attach('foto', file_get_contents($file->getPathname()), $file->getClientOriginalName())
+                    ->post("{$this->apiBaseUrl}/admin/wisata/{$id}", array_merge($formData, ['_method' => 'PUT']));
+            } else {
+                // Menggunakan asForm agar API dapat membaca inputan teks biasa secara stabil
+                $response = Http::asForm()
+                    ->post("{$this->apiBaseUrl}/admin/wisata/{$id}", array_merge($formData, ['_method' => 'PUT']));
+            }
+
+            if ($response->successful()) {
+                return redirect()->route('admin.wisata')->with('success', 'Data wisata berhasil diperbarui.');
+            }
+
+            return redirect()->route('admin.wisata')->with('error', 'Gagal update API: ' . $response->body());
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.wisata')->with('error', 'Kesalahan sistem saat update: ' . $e->getMessage());
+        }
     }
 
     public function destroy($id)
     {
-        $wisatas = Session::get('mock_wisatas', []);
-        
-        $wisatas = array_filter($wisatas, function($item) use ($id) {
-            return $item['id'] != $id;
-        });
-
-        Session::put('mock_wisatas', array_values($wisatas));
-        return redirect()->route('admin.wisata')->with('success', 'Data layanan berhasil dihapus (Demo Mode).');
+        try {
+            $response = Http::delete("{$this->apiBaseUrl}/admin/wisata/{$id}");
+            if ($response->successful()) {
+                return redirect()->route('admin.wisata')->with('success', 'Data wisata berhasil dihapus dari pusat API.');
+            }
+            return redirect()->route('admin.wisata')->with('error', 'Gagal menghapus data.');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.wisata')->with('error', 'Gagal menyambungkan peladen: ' . $e->getMessage());
+        }
     }
 }

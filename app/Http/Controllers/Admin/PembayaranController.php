@@ -1,26 +1,54 @@
 <?php
 
 namespace App\Http\Controllers\Admin;
+
 use App\Http\Controllers\Controller;
-use App\Services\ApiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class PembayaranController extends Controller
 {
-    public function __construct(private ApiService $api) {}
- 
+    private $apiBaseUrl = 'http://127.0.0.1:8000/api/v1/admin';
+
     public function index(Request $request)
     {
-        $res       = $this->api->getPembayaran($request->only(['status','ref_type','dari','sampai','page']));
-        $pembayaran = $res->json('data');
-        return view('admin.pembayaran.index', compact('pembayaran'));
+        $pembayarans = [];
+        
+        try {
+            // Menarik data dengan parameter query paginasi jika ada
+            $queryParams = $request->all();
+            $response = Http::get("{$this->apiBaseUrl}/pembayaran", $queryParams);
+            
+            if ($response->successful()) {
+                $result = $response->json();
+                // Mengambil data dari struktur paginate() Laravel -> 'data' di dalam 'data'
+                $pembayarans = $result['data']['data'] ?? ($result['data'] ?? []);
+            }
+        } catch (\Exception $e) {
+            $pembayarans = [];
+        }
+
+        return view('admin.pembayaran.index', compact('pembayarans'));
     }
- 
+
     public function show($id)
     {
-        $res  = $this->api->getPembayaranDetail($id);
-        $data = $res->json('data');
-        return view('admin.pembayaran.show', compact('data'));
+        try {
+            $response = Http::get("{$this->apiBaseUrl}/pembayaran/{$id}");
+            
+            if ($response->successful()) {
+                $result = $response->json();
+                $data = $result['data'] ?? null;
+                
+                if ($data) {
+                    return response()->json(['success' => true, 'data' => $data]);
+                }
+            }
+            
+            return response()->json(['success' => false, 'message' => 'Rincian pembayaran tidak ditemukan.'], 404);
+            
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan peladen.', 'error' => $e->getMessage()], 500);
+        }
     }
 }
- 

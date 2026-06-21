@@ -8,20 +8,26 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function __construct(private ApiService $api) {}
+    protected $api;
+
+    public function __construct(ApiService $api) 
+    {
+        $this->api = $api;
+    }
 
     public function index()
     {
         $res = $this->api->pengelolaDashboard();
         
-        // Mengambil isi data statistik dari JSON API Anda
-        $data = $res->successful() ? ($res->json('data') ?? []) : [];
-
-        if (!$res->successful()) {
-            session()->flash('error', 'Gagal terhubung ke server Citiisgo-API. Data statistik tidak dapat dimuat.');
+        // Memastikan respons sukses dan mengambil data statistik
+        if ($res && $res->successful()) {
+            $data = $res->json('data') ?? [];
+        } else {
+            $data = [];
+            session()->flash('error', 'Gagal terhubung ke server pusat CitiisGo. Data statistik unit bisnis tidak dapat dimuat secara penuh.');
         }
 
-        // FIX TOTAL: Diarahkan langsung ke file dashboard.blade.php Anda (tanpa index)
+        // Diarahkan langsung ke file resources/views/pengelola/dashboard.blade.php
         return view('pengelola.dashboard', compact('data'));
     }
 }

@@ -1,117 +1,230 @@
 @extends('layouts.app')
-@section('title','Pembayaran')
-@section('topbar-title','💳 Manajemen Pembayaran')
+@section('title', 'Verifikasi Pembayaran - CitiisGo')
+@section('topbar-title', '💳 Validasi Pembayaran Transaksi')
+
 @section('content')
-<div class="bc"><a href="{{ route('admin.dashboard') }}">🏠</a><span class="bc-sep">›</span><span>Pembayaran</span></div>
-<div class="ph">
-  <div><h1>💳 Manajemen Pembayaran</h1><p>Monitor semua transaksi pembayaran CitiisGo</p></div>
-  <div class="ph-right"><button class="btn btn-out btn-sm">📥 Export Excel</button><button class="btn btn-out btn-sm">📄 Export PDF</button></div>
+{{-- ── BREADCRUMB ── --}}
+<div class="flex items-center gap-2 text-xs text-slate-400 mb-5 font-medium">
+    <a href="{{ route('admin.dashboard') }}" class="hover:text-emerald-600 transition-colors">🏠 Dashboard</a>
+    <span class="text-slate-300">/</span>
+    <span class="text-slate-500">Validasi Pembayaran</span>
 </div>
 
-<div class="stats">
-  <div class="sc" style="--ac:var(--g600)"><div class="sc-lbl">Total Pendapatan</div><div class="sc-val">Rp 48,2jt</div><div class="sc-sub sc-up">▲ 18.7% bulan ini</div><div class="sc-ico">💰</div></div>
-  <div class="sc" style="--ac:var(--b700)"><div class="sc-lbl">Transaksi Lunas</div><div class="sc-val">1.024</div><div class="sc-sub sc-up">▲ 12.1%</div><div class="sc-ico">✅</div></div>
-  <div class="sc" style="--ac:var(--o500)"><div class="sc-lbl">Menunggu Bayar</div><div class="sc-val">47</div><div class="sc-sub sc-dn">Perlu follow-up</div><div class="sc-ico">⏳</div></div>
-  <div class="sc" style="--ac:var(--r700)"><div class="sc-lbl">Gagal / Expired</div><div class="sc-val">23</div><div class="sc-sub sc-dn">▲ 5 kasus</div><div class="sc-ico">❌</div></div>
+{{-- ── PAGE HEADER ── --}}
+<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">💳 Validasi Pembayaran Reservasi</h1>
+        <p class="text-sm text-slate-500 font-medium mt-1">Lakukan pemantauan rekapitulasi pelunasan transaksi secara langsung dari server pusat.</p>
+    </div>
 </div>
 
-<div class="g2" style="margin-bottom:16px">
-  <div class="card" style="margin-bottom:0">
-    <div class="card-hd"><div class="card-title">💰 Pendapatan per Layanan</div></div>
-    <div class="card-body">
-      @foreach([['🎫 Reservasi Tiket','Rp 18,4jt',72,'var(--g600)'],['⛺ Booking Camping','Rp 12,8jt',50,'var(--o500)'],['🏨 Booking Penginapan','Rp 10,5jt',41,'var(--b700)'],['🎒 Sewa Peralatan','Rp 6,5jt',25,'var(--p700)']] as [$lbl,$val,$pct,$clr])
-      <div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
-          <span>{{ $lbl }}</span><strong style="color:{{ $clr }}">{{ $val }}</strong>
+{{-- ── STATS SUMMARY ── --}}
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden group border-t-4 border-t-amber-500">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Menunggu Validasi</div>
+        <div class="text-3xl font-extrabold text-slate-900 my-1.5 tracking-tight">
+            {{ collect($pembayarans ?? [])->where('status', 'pending')->count() }}
         </div>
-        <div class="progress"><div class="progress-fill" style="width:{{ $pct }}%;background:{{ $clr }}"></div></div>
-      </div>
-      @endforeach
-      <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;font-size:13px;font-weight:700">
-        <span>Total</span><span style="color:var(--g700)">Rp 48,2jt</span>
-      </div>
+        <div class="text-xs text-slate-500 font-medium">Transaksi perlu audit admin</div>
     </div>
-  </div>
-  <div class="card" style="margin-bottom:0">
-    <div class="card-hd"><div class="card-title">📊 Metode Pembayaran</div></div>
-    <div class="card-body" style="padding:0">
-      @foreach([['💳','Transfer Bank','524','Rp 22,1jt','var(--b700)'],['📱','QRIS','312','Rp 14,8jt','var(--g600)'],['💰','GoPay/OVO/Dana','188','Rp 11,3jt','var(--o500)']] as [$ico,$metode,$jml,$total,$clr])
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)">
-        <div style="width:38px;height:38px;border-radius:9px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">{{ $ico }}</div>
-        <div style="flex:1"><div class="fw7" style="font-size:13px">{{ $metode }}</div><div class="text-sm text-muted">{{ $jml }} transaksi</div></div>
-        <div style="text-align:right"><div class="fw7" style="color:{{ $clr }}">{{ $total }}</div></div>
-      </div>
-      @endforeach
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden group border-t-4 border-t-emerald-600">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tervalidasi Sukses</div>
+        <div class="text-3xl font-extrabold text-slate-900 my-1.5 tracking-tight">
+            {{ collect($pembayarans ?? [])->where('status', 'paid')->count() }}
+        </div>
+        <div class="text-xs text-slate-500 font-medium">Pembayaran terekonsiliasi</div>
     </div>
-  </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden group border-t-4 border-t-rose-600">
+        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Transaksi Gagal/Ditolak</div>
+        <div class="text-3xl font-extrabold text-slate-900 my-1.5 tracking-tight">
+            {{ collect($pembayarans ?? [])->where('status', 'failed')->count() }}
+        </div>
+        <div class="text-xs text-slate-500 font-medium">Transaksi kadaluarsa/ditolak</div>
+    </div>
 </div>
 
-<div class="card">
-  <div class="card-hd"><div class="card-title">📋 Riwayat Transaksi</div></div>
-  <div class="card-body" style="padding-bottom:0">
-    <div class="fbar">
-      <form method="GET" action="{{ route('admin.pembayaran') }}" style="display:contents">
-        <div class="si"><span style="font-size:13px;color:var(--tm)">🔍</span><input type="text" name="search" placeholder="Cari kode, nama user..." value="{{ request('search') }}"></div>
-        <select name="ref_type" class="sf" onchange="this.form.submit()">
-          <option value="">Semua Layanan</option>
-          <option value="reservasi" {{ request('ref_type')==='reservasi'?'selected':'' }}>🎫 Reservasi Tiket</option>
-          <option value="booking_camping" {{ request('ref_type')==='booking_camping'?'selected':'' }}>⛺ Booking Camping</option>
-          <option value="booking_penginapan" {{ request('ref_type')==='booking_penginapan'?'selected':'' }}>🏨 Booking Penginapan</option>
-          <option value="sewa_peralatan" {{ request('ref_type')==='sewa_peralatan'?'selected':'' }}>🎒 Sewa Peralatan</option>
-        </select>
-        <select name="status" class="sf" onchange="this.form.submit()">
-          <option value="">Semua Status</option>
-          <option value="paid">✅ Lunas</option>
-          <option value="pending">⏳ Pending</option>
-          <option value="failed">❌ Gagal</option>
-          <option value="expired">⌛ Expired</option>
-          <option value="refunded">↩️ Refund</option>
-        </select>
-        <input type="date" name="dari" class="sf" value="{{ request('dari',now()->startOfMonth()->format('Y-m-d')) }}">
-        <span class="text-muted text-sm">s/d</span>
-        <input type="date" name="sampai" class="sf" value="{{ request('sampai',now()->format('Y-m-d')) }}">
-        <button type="submit" class="btn btn-g btn-sm">🔍 Filter</button>
-      </form>
+{{-- ── TABLE DATA CONTAINER ── --}}
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-6">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <h3 class="text-sm font-bold text-slate-800">Daftar Keseluruhan Pembayaran Pengunjung</h3>
+        <span class="text-[10px] font-extrabold uppercase tracking-widest bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg border border-slate-200">Terpusat</span>
     </div>
-  </div>
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead><tr><th>Kode Transaksi</th><th>Wisatawan</th><th>Layanan</th><th>Wisata</th><th>Metode</th><th>Jumlah</th><th>Status</th><th>Waktu</th><th>Aksi</th></tr></thead>
-      <tbody>
-        @foreach($pembayaran['data'] ?? [
-          ['PAY-20250601-001','Budi Santoso','reservasi','Curug Cimedang','QRIS','Rp 75.000','paid','01 Jun 14:22'],
-          ['PAY-20250601-002','Siti Rahma','booking_camping','Bukit Teletubbies','Transfer BCA','Rp 700.000','pending','01 Jun 15:45'],
-          ['PAY-20250601-003','Ahmad Fauzi','booking_penginapan','Situ Gede Resort','GoPay','Rp 450.000','paid','01 Jun 16:10'],
-          ['PAY-20250601-004','Dewi Kurnia','sewa_peralatan','Curug Dengdeng','QRIS','Rp 240.000','failed','01 Jun 17:03'],
-          ['PAY-20250601-005','Rudi Setiawan','reservasi','Pantai Sindangkerta','OVO','Rp 50.000','refunded','01 Jun 18:30'],
-          ['PAY-20250601-006','Hana Fitriani','booking_camping','Bukit Teletubbies','Transfer BRI','Rp 500.000','paid','01 Jun 20:15'],
-        ] as $p)
-        @php
-          $layananLabel = ['reservasi'=>['🎫','Tiket','bg-s'],'booking_camping'=>['⛺','Camping','bg-w'],'booking_penginapan'=>['🏨','Penginapan','bg-i'],'sewa_peralatan'=>['🎒','Sewa Alat','bg-p']];
-          $ll = $layananLabel[$p[2]] ?? ['📄',$p[2],'bg-y'];
-          $statusBadge = ['paid'=>['bg-s','✅ Lunas'],'pending'=>['bg-w','⏳ Pending'],'failed'=>['bg-d','❌ Gagal'],'expired'=>['bg-d','⌛ Expired'],'refunded'=>['bg-i','↩️ Refund']];
-          $sb = $statusBadge[$p[6]] ?? ['bg-y',$p[6]];
-        @endphp
-        <tr>
-          <td><span class="mono">{{ $p[0] }}</span></td>
-          <td class="fw7">{{ $p[1] }}</td>
-          <td><span class="badge {{ $ll[2] }}">{{ $ll[0] }} {{ $ll[1] }}</span></td>
-          <td class="text-muted text-sm">{{ $p[3] }}</td>
-          <td class="text-sm">{{ $p[4] }}</td>
-          <td class="fw7" style="color:{{ $p[6]==='paid'?'var(--g700)':($p[6]==='failed'?'var(--r700)':'var(--t2)') }}">{{ $p[5] }}</td>
-          <td><span class="badge {{ $sb[0] }}">{{ $sb[1] }}</span></td>
-          <td class="text-muted text-sm">{{ $p[7] }}</td>
-          <td><a href="{{ route('admin.pembayaran.show',['id'=>1]) }}" class="btn btn-out btn-xs">Detail</a></td>
-        </tr>
-        @endforeach
-      </tbody>
-    </table>
-  </div>
-  <div class="card-ft">
-    <span class="text-sm text-muted">Menampilkan <strong>1–10</strong> dari <strong>1.094</strong> transaksi</span>
-    <div class="pg">
-      <button class="pb">‹</button><button class="pb a">1</button><button class="pb">2</button><button class="pb">3</button><button class="pb">...</button><button class="pb">110</button><button class="pb">›</button>
+    
+    <div class="p-4 border-b border-slate-100 bg-white">
+        <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 h-9 flex-1 sm:max-w-xs focus-within:border-emerald-500 focus-within:bg-white transition-all duration-150">
+                <span class="text-slate-400 text-sm">🔍</span>
+                <input id="search-bar-pembayaran" type="text" placeholder="Pencarian kode transaksi/modul..." class="bg-transparent border-none outline-none text-xs text-slate-700 w-full font-medium">
+            </div>
+        </div>
     </div>
-  </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs font-medium">
+            <thead>
+                <tr class="bg-slate-50/70 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                    <th class="px-5 py-3">Kode Transaksi</th>
+                    <th class="px-5 py-3">Modul / Referensi</th>
+                    <th class="px-5 py-3">Nominal Bayar</th>
+                    <th class="px-5 py-3">Status Validasi</th>
+                    <th class="px-5 py-3">Metode Bayar</th>
+                    <th class="px-5 py-3 text-center w-24">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700" id="table-pembayaran-data">
+                @forelse($pembayarans ?? [] as $item)
+                <tr class="hover:bg-slate-50/60 transition-colors">
+                    <td class="px-5 py-3.5 font-extrabold text-slate-800 tracking-tight uppercase">{{ $item['kode_transaksi'] ?? $item['id'] ?? '-' }}</td>
+                    <td class="px-5 py-3.5">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200">
+                            {{ $item['ref_type'] ?? 'Umum' }}
+                        </span>
+                        <span class="text-[9px] text-slate-400 font-bold ml-1">ID Ref: {{ $item['ref_id'] ?? '-' }}</span>
+                    </td>
+                    <td class="px-5 py-3.5 font-black text-emerald-700">Rp {{ number_format($item['jumlah'] ?? 0, 0, ',', '.') }}</td>
+                    <td class="px-5 py-3.5">
+                        @php
+                            $status = strtolower($item['status'] ?? 'pending');
+                        @endphp
+                        @if($status == 'paid')
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">✅ Lunas / Berhasil</span>
+                        @elseif($status == 'pending')
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-extrabold uppercase bg-amber-50 text-amber-700 border border-amber-200">⏳ Menunggu Validasi</span>
+                        @else
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-extrabold uppercase bg-rose-50 text-rose-700 border border-rose-200">❌ Ditolak / Gagal</span>
+                        @endif
+                    </td>
+                    <td class="px-5 py-3.5 font-semibold text-slate-600 uppercase">
+                        {{ $item['metode'] ?? 'Transfer Manual' }}
+                    </td>
+                    <td class="px-5 py-3.5 text-center">
+                        <button onclick="loadDetailPembayaran({{ $item['id'] }})" class="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[10px] inline-flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" title="Cek Rincian">👁️</button>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="px-5 py-12 text-center text-slate-400 font-medium">
+                        <i class="fa-solid fa-ban text-2xl text-slate-300 mb-2 block"></i> Belum ada data riwayat pembayaran pusat.
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{-- ── MODAL: DETAIL & RINCIAN POLIMORFIK ── --}}
+<div class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm items-center justify-center p-4 modal-backdrop" id="modalDetailPembayaran">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-base">📋 Rincian Transaksi Pusat</h3>
+            <button onclick="toggleModal('modalDetailPembayaran')" class="w-7 h-7 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 font-bold flex items-center justify-center text-xs cursor-pointer">✕</button>
+        </div>
+        <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 grid grid-cols-2 gap-3">
+                <div>
+                    <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Kode Transaksi</div>
+                    <div id="m_kode" class="font-extrabold text-slate-900 text-xs uppercase mt-0.5 tracking-tight">—</div>
+                </div>
+                <div>
+                    <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Nominal Dibayar</div>
+                    <div id="m_nominal" class="font-black text-emerald-700 text-sm mt-0.5">—</div>
+                </div>
+                <div>
+                    <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Status Pembayaran</div>
+                    <div id="m_status_badge" class="mt-0.5 inline-block">—</div>
+                </div>
+                <div>
+                    <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Metode Bayar</div>
+                    <div id="m_metode" class="font-semibold text-slate-600 text-xs uppercase mt-0.5">—</div>
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-100 pt-4">
+                <h4 class="text-xs font-bold text-slate-700 mb-3 tracking-tight">📎 Data Rujukan / Model Terkait</h4>
+                <div id="m_ref_data" class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-2xs font-semibold text-slate-600 space-y-1.5 select-all">
+                    Memuat rincian relasi data...
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-slate-100 bg-slate-50">
+            <button type="button" onclick="toggleModal('modalDetailPembayaran')" class="inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 font-bold text-xs px-4 h-9 rounded-xl shadow-sm hover:bg-slate-50 cursor-pointer">Tutup</button>
+        </div>
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function filterPembayaran(query) {
+        const rows = document.querySelectorAll('#table-pembayaran-data tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if(text.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    document.getElementById('search-bar-pembayaran').addEventListener('input', function(e) {
+        filterPembayaran(e.target.value.toLowerCase());
+    });
+
+    async function loadDetailPembayaran(id) {
+        try {
+            const response = await fetch("{{ route('admin.pembayaran.show', ':id') }}".replace(':id', id));
+            const result = await response.json();
+            
+            if(result.success) {
+                const item = result.data.pembayaran;
+                const refModel = result.data.ref;
+
+                document.getElementById('m_kode').textContent = item.kode_transaksi || item.id;
+                document.getElementById('m_nominal').textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.jumlah || 0);
+                document.getElementById('m_metode').textContent = item.metode || '-';
+
+                let badgeHtml = '';
+                const status = (item.status || 'pending').toLowerCase();
+                if(status === 'paid') {
+                    badgeHtml = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">✅ Lunas / Berhasil</span>`;
+                } else if(status === 'pending') {
+                    badgeHtml = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-amber-50 text-amber-700 border border-amber-200">⏳ Menunggu Validasi</span>`;
+                } else {
+                    badgeHtml = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-rose-50 text-rose-700 border border-rose-200">❌ Ditolak / Gagal</span>`;
+                }
+                document.getElementById('m_status_badge').innerHTML = badgeHtml;
+
+                const refContainer = document.getElementById('m_ref_data');
+                if (refModel) {
+                    let refHtml = `<div class="grid grid-cols-2 gap-2 text-[10px]">`;
+                    for (const [key, val] of Object.entries(refModel)) {
+                        if (typeof val !== 'object' && val !== null) {
+                            refHtml += `<div><span class="text-slate-400 font-bold uppercase">${key}:</span> <span class="text-slate-700">${val}</span></div>`;
+                        }
+                    }
+                    refHtml += `</div>`;
+                    refContainer.innerHTML = refHtml;
+                } else {
+                    refContainer.innerHTML = '<p class="text-rose-600 font-bold text-[10px]">Data rujukan tidak ditemukan secara polimorfik.</p>';
+                }
+
+                toggleModal('modalDetailPembayaran');
+            }
+        } catch(err) {
+            console.error("Gagal menarik data detail pembayaran:", err);
+            alert("Gagal menyambungkan ke API peladen pusat.");
+        }
+    }
+
+    function toggleModal(id) {
+        const modal = document.getElementById(id);
+        if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        } else {
+            modal.classList.remove('flex'); modal.classList.add('hidden');
+        }
+    }
+</script>
+@endpush

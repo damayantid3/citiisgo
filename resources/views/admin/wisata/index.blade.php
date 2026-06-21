@@ -23,7 +23,7 @@
     </div>
 </div>
 
-{{-- ── DYNAMIC STATS GRID ── --}}
+{{-- ── DYNAMIC STATS GRID (BLADE DATA) ── --}}
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
     <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden group border-t-4 border-t-emerald-600">
         <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Layanan</div>
@@ -47,13 +47,13 @@
         <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
             <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 h-9 flex-1 sm:max-w-xs focus-within:border-emerald-500 focus-within:bg-white transition-all duration-150">
                 <span class="text-slate-400 text-sm">🔍</span>
-                <input id="search-bar-array" type="text" placeholder="Pencarian katalog asinkron..." class="bg-transparent border-none outline-none text-xs text-slate-700 w-full font-medium">
+                <input id="search-bar-array" type="text" placeholder="Pencarian katalog produk..." class="bg-transparent border-none outline-none text-xs text-slate-700 w-full font-medium">
             </div>
-            <div class="text-[10px] font-bold text-slate-400">Penyelarasan integrasi database dari server peladen API.</div>
+            <div class="text-[10px] font-bold text-slate-400">Penyelarasan langsung integrasi data database pusat.</div>
         </div>
     </div>
 
-    {{-- 📋 VIEW TYPE A: DATA TABLE (LIST VIEW) --}}
+    {{-- 📋 VIEW TYPE A: DATA TABLE (LIST VIEW BLADE) --}}
     <div id="viewList" class="block">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs font-medium">
@@ -66,15 +66,16 @@
                         <th class="px-5 py-3 text-center w-36">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 text-slate-700">
+                <tbody class="divide-y divide-slate-100 text-slate-700" id="table-list-data">
                     @forelse($wisatas ?? [] as $item)
                     <tr class="hover:bg-slate-50/60 transition-colors group/row">
                         <td class="px-5 py-3.5">
                             <div class="flex items-center gap-3">
                                 @php
                                     $fotoPath = $item['foto'] ?? null;
-                                    $foto = $item['foto_url'] ?? ($fotoPath ? (str_starts_with($fotoPath, 'http') ? $fotoPath : 'http://127.0.0.1:8000/storage/' . $fotoPath) : 'https://images.unsplash.com/photo-1544161515-4ab6ce6bab34?w=800&q=80');
+                                    $foto = $item['foto_url'] ?? ($fotoPath ? 'http://127.0.0.1:8000/foto_wisata/' . $fotoPath : 'https://images.unsplash.com/photo-1544161515-4ab6ce6bab34?w=800&q=80');
                                     $itemArr = array_merge($item, ['foto_url' => $foto]);
+                                    $encodedItem = urlencode(json_encode($itemArr));
                                 @endphp
                                 <img src="{{ $foto }}" class="w-10 h-10 object-cover rounded-xl border border-slate-100 shadow-sm bg-slate-50 flex-shrink-0" alt="{{ $item['nama'] }}">
                                 <div class="min-w-0">
@@ -84,15 +85,15 @@
                         </td>
                         <td class="px-5 py-3.5">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200/50">
-                                {{ is_array($item['kategori']) ? ($item['kategori']['nama'] ?? 'Umum') : ($item['kategori'] ?? 'Umum') }}
+                                {{ is_array($item['kategori'] ?? null) ? ($item['kategori']['nama'] ?? 'Umum') : ($item['kategori']['nama'] ?? 'Umum') }}
                             </span>
                         </td>
-                        <td class="px-5 py-3.5 font-black text-emerald-700 text-sm">Rp {{ number_format($item['harga_tiket'], 0, ',', '.') }}</td>
+                        <td class="px-5 py-3.5 font-black text-emerald-700 text-sm">Rp {{ number_format($item['harga_tiket'] ?? 0, 0, ',', '.') }}</td>
                         <td class="px-5 py-3.5 font-extrabold text-slate-600 text-xs">{{ $item['kuota_harian'] ?? '-' }} Slot/Hari</td>
                         <td class="px-5 py-3.5">
                             <div class="flex items-center justify-center gap-1.5">
-                                <button onclick="viewDetailModal({{ json_encode($itemArr) }})" class="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[10px] flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" title="Lihat Spesifikasi">👁️</button>
-                                <button onclick="viewEditModal({{ json_encode($itemArr) }})" class="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[10px] flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" title="Ubah Spesifikasi">✏️</button>
+                                <button onclick="safeShowDetail('{{ $encodedItem }}')" class="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[10px] flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" title="Lihat Spesifikasi">👁️</button>
+                                <button onclick="safeShowEdit('{{ $encodedItem }}')" class="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[10px] flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" title="Ubah Spesifikasi">✏️</button>
                                 <form action="{{ route('admin.wisata.destroy', $item['id']) }}" method="POST" class="inline-block m-0 p-0" onsubmit="return confirm('Yakin ingin menghapus data ini?');">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="w-7 h-7 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] flex items-center justify-center shadow-sm active:scale-95 transition-transform cursor-pointer" title="Hapus Produk">🗑️</button>
@@ -112,14 +113,15 @@
         </div>
     </div>
 
-    {{-- 🗂️ VIEW TYPE B: RESPONSIVE GRID VIEW --}}
+    {{-- 🗂️ VIEW TYPE B: RESPONSIVE GRID VIEW BLADE --}}
     <div id="viewGrid" class="hidden p-5 bg-slate-50/50">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5" id="grid-list-data">
             @foreach($wisatas ?? [] as $item)
              @php
                 $fotoPathG = $item['foto'] ?? null;
-                $fotoG = $item['foto_url'] ?? ($fotoPathG ? (str_starts_with($fotoPathG, 'http') ? $fotoPathG : 'http://127.0.0.1:8000/storage/' . $fotoPathG) : 'https://images.unsplash.com/photo-1544161515-4ab6ce6bab34?w=800&q=80');
+                $fotoG = $item['foto_url'] ?? ($fotoPathG ? 'http://127.0.0.1:8000/foto_wisata/' . $fotoPathG : 'https://images.unsplash.com/photo-1544161515-4ab6ce6bab34?w=800&q=80');
                 $itemArrG = array_merge($item, ['foto_url' => $fotoG]);
+                $encodedItemG = urlencode(json_encode($itemArrG));
             @endphp
             <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 group flex flex-col">
                 <div class="h-32 bg-emerald-50 relative overflow-hidden">
@@ -128,15 +130,15 @@
                 <div class="p-4 flex-1 flex flex-col justify-between">
                     <div>
                         <h4 class="font-extrabold text-slate-900 text-xs tracking-tight truncate group-hover:text-emerald-700 transition-colors">{{ $item['nama'] }}</h4>
-                        <p class="text-[10px] text-slate-400 font-extrabold uppercase mt-0.5 tracking-wider">🏷️ {{ is_array($item['kategori']) ? ($item['kategori']['nama'] ?? 'Umum') : ($item['kategori'] ?? 'Umum') }}</p>
+                        <p class="text-[10px] text-slate-400 font-extrabold uppercase mt-0.5 tracking-wider">🏷️ {{ is_array($item['kategori'] ?? null) ? ($item['kategori']['nama'] ?? 'Umum') : ($item['kategori']['nama'] ?? 'Umum') }}</p>
                         <div class="flex items-center justify-between border-y border-slate-100 py-1.5 my-3">
-                            <span class="font-black text-emerald-700 text-xs">Rp {{ number_format($item['harga_tiket'], 0, ',', '.') }}</span>
+                            <span class="font-black text-emerald-700 text-xs">Rp {{ number_format($item['harga_tiket'] ?? 0, 0, ',', '.') }}</span>
                             <span class="font-bold text-[10px] text-slate-500">{{ $item['kuota_harian'] ?? '-' }} Kuota</span>
                         </div>
                     </div>
                     <div class="flex gap-2 w-full mt-1">
-                        <button onclick="viewDetailModal({{ json_encode($itemArrG) }})" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 font-extrabold text-[10px] h-8 rounded-xl border border-slate-200 active:scale-95 transition-transform cursor-pointer">👁️ Detail</button>
-                        <button onclick="viewEditModal({{ json_encode($itemArrG) }})" class="w-8 h-8 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center text-[10px] active:scale-95 transition-transform cursor-pointer">✏️</button>
+                        <button onclick="safeShowDetail('{{ $encodedItemG }}')" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 font-extrabold text-[10px] h-8 rounded-xl border border-slate-200 active:scale-95 transition-transform cursor-pointer">👁️ Detail</button>
+                        <button onclick="safeShowEdit('{{ $encodedItemG }}')" class="w-8 h-8 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center text-[10px] active:scale-95 transition-transform cursor-pointer">✏️</button>
                     </div>
                 </div>
             </div>
@@ -162,7 +164,6 @@
                     </div>
                     <div class="flex flex-col gap-1.5">
                         <label class="text-xs font-bold text-slate-500">Jenis Layanan (Kategori) <span class="text-rose-600">*</span></label>
-                        {{-- 💡 Langsung menembak port Backend API 8000 secara mutlak --}}
                         <select name="kategori_id" id="tambah_kategori_id" required class="w-full border border-slate-200 bg-white rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-500 transition-all cursor-pointer">
                             <option value="">Memuat Kategori...</option>
                         </select>
@@ -247,6 +248,7 @@
             <h3 class="font-bold text-slate-800 text-base">✏️ Edit Informasi Katalog</h3>
             <button onclick="toggleModal('modalEditWisata')" class="w-7 h-7 rounded-lg border border-slate-200 hover:bg-rose-50 hover:text-rose-600 font-bold flex items-center justify-center text-xs cursor-pointer">✕</button>
         </div>
+        {{-- ⚡ RUTE AKSI MENGARAH KE RUTE UPDATE BIASA --}}
         <form action="" method="POST" id="formEditWisataAdmin" enctype="multipart/form-data" class="m-0">
             @csrf @method('PUT')
             <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
@@ -344,10 +346,32 @@
         }
     }
 
+    function filterAdminArray(query) {
+        const rows = document.querySelectorAll('#table-list-data tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if(text.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    document.getElementById('search-bar-array').addEventListener('input', function(e) {
+        filterAdminArray(e.target.value.toLowerCase());
+    });
+
+    function safeShowDetail(encodedJsonStr) {
+        const decodedJson = decodeURIComponent(encodedJsonStr);
+        const item = JSON.parse(decodedJson);
+        viewDetailModal(item);
+    }
+
     function viewDetailModal(item) {
-        document.getElementById('detail_foto').src = item.foto_url || 'https://images.unsplash.com/photo-1544161515-4ab6ce6bab34?w=800&q=80';
+        document.getElementById('detail_foto').src = item.foto_url;
         document.getElementById('detail_nama').textContent = item.nama;
-        document.getElementById('detail_kategori').textContent = `🏷️ Kategori: ${item.kategori?.nama ?? (item.kategori ?? 'Umum')}`;
+        document.getElementById('detail_kategori').textContent = `🏷️ Kategori: ${item.kategori?.nama ?? 'Umum'}`;
         document.getElementById('detail_harga').textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.harga_tiket);
         document.getElementById('detail_kuota').textContent = `${item.kuota_harian ?? 'Tidak terbatas'} slot / hari`;
         document.getElementById('detail_deskripsi').textContent = item.deskripsi ?? 'Fasilitas tidak dispesifikasikan.';
@@ -355,7 +379,6 @@
         toggleModal('modalDetailWisata');
     }
 
-    // 💡 Diperbaiki: Menembak peladen pusat (port 8000) secara absolut agar tidak 404/gagal
     async function openAddModal() {
         try {
             const response = await fetch('http://127.0.0.1:8000/api/v1/kategori'); 
@@ -364,7 +387,6 @@
             const selectEl = document.getElementById('tambah_kategori_id');
             if (selectEl) {
                 selectEl.innerHTML = '<option value="">-- Pilih Jenis Layanan --</option>';
-                
                 const dataKategori = Array.isArray(result) ? result : (result.data || []);
                 
                 if (dataKategori.length > 0) {
@@ -384,6 +406,12 @@
         toggleModal('modalTambahWisata');
     }
 
+    function safeShowEdit(encodedJsonStr) {
+        const decodedJson = decodeURIComponent(encodedJsonStr);
+        const item = JSON.parse(decodedJson);
+        viewEditModal(item);
+    }
+
     function viewEditModal(item) {
         document.getElementById('edit_id').value = item.id;
         document.getElementById('edit_nama').value = item.nama;
@@ -398,6 +426,7 @@
             editKategoriSelect.value = katId;
         }
 
+        // ⚡ MENGARAHKAN ROUTE ADMIN PADA WEB FRONTEND PORT 8001
         const form = document.getElementById('formEditWisataAdmin');
         form.action = "{{ route('admin.wisata.update', ':id') }}".replace(':id', item.id);
 
