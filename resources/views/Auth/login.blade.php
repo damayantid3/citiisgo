@@ -17,7 +17,7 @@
 
     <div class="w-full max-w-md mx-auto flex justify-center pt-6 mb-2">
         <div class="w-24 h-24 bg-white rounded-3xl shadow-xl border border-slate-100 p-2.5 flex items-center justify-center">
-            <img src="{{ asset('assets/img/CitiisgoLogo.jpeg') }}" alt="Logo CitiisGo" class="w-full h-full object-contain rounded-2xl">
+           <img src="{{ asset('assets/img/CitiisgoLogo.jpeg') }}" alt="CitiisGo Logo" class="h-8 w-auto object-contain">
         </div>
     </div>
 

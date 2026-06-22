@@ -5,6 +5,7 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Services\ApiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class WisataController extends Controller
 {
@@ -15,11 +16,11 @@ class WisataController extends Controller
      */
     public function index()
     {
-        // Mengambil data dari HTTP Client ApiService
-        $res = $this->api->getKategori(); // Mengambil kategori jika dibutuhkan filter
+        // Mengambil data kategori untuk filter jika dibutuhkan
+        $res = $this->api->getKategori(); 
         
-        // Mengambil data rute publik wisata dari backend API
-        $responseWisata = \Illuminate\Support\Facades\Http::baseUrl('http://127.0.0.1:8000/api/v1')
+        // Mengambil data rute publik wisata dari backend API (Port 8000 secara absolut)
+        $responseWisata = Http::baseUrl('http://127.0.0.1:8000/api/v1')
             ->acceptJson()
             ->get('/wisata');
 
@@ -33,16 +34,7 @@ class WisataController extends Controller
      */
     public function show($id)
     {
-        $responseDetail = \Illuminate\Support\Facades\Http::baseUrl('http://127.0.0.1:8000/api/v1')
-            ->acceptJson()
-            ->get("/wisata/{$id}");
-
-        $wisata = $responseDetail->successful() ? ($responseDetail->json('data') ?? $responseDetail->json()) : null;
-
-        if (!$wisata) {
-            abort(404, 'Destinasi wisata alam Citiis tidak ditemukan.');
-        }
-
-        return view('user.wisata.show', compact('wisata'));
+        // Melempar id ke view agar dapat diakses oleh JavaScript fetchDetailWisata()
+        return view('user.wisata.show', compact('id'));
     }
 }

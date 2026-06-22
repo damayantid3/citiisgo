@@ -29,9 +29,21 @@ class ApiService
             ->acceptJson()
             ->withHeaders([
                 'Accept' => 'application/json',
-                'Content-Type' => 'application/json',
             ])
             ->timeout(30)
+            ->when(Session::get('api_token') ?? Session::get('token'), function ($request, $token) {
+                return $request->withToken($token);
+            });
+    }
+
+    /**
+     * Base HTTP Client khusus upload file multipart/form-data
+     */
+    private function multipartClient(): \Illuminate\Http\Client\PendingRequest
+    {
+        return Http::baseUrl($this->baseUrl)
+            ->acceptJson()
+            ->timeout(60)
             ->when(Session::get('api_token') ?? Session::get('token'), function ($request, $token) {
                 return $request->withToken($token);
             });
@@ -106,10 +118,11 @@ class ApiService
     }
 
     // ── Admin: Kategori ──────────────────────────────────────
-    public function getKategori(): Response
-    {
-        return $this->client()->get('/kategori-wisata');
-    }
+    // Pastikan method getKategori sudah ada di dalam class ApiService.php Anda
+public function getKategori(): Response
+{
+    return $this->client()->get('/kategori-wisata');
+}
 
     public function createKategori(array $data): Response
     {
@@ -170,14 +183,23 @@ class ApiService
         return $this->client()->put('/pengelola/wisata', $data);
     }
 
+    public function updateWisataMultipart(array $data, $file = null): Response
+    {
+        $req = $this->client(); 
+        if ($file && $file instanceof \Illuminate\Http\UploadedFile) {
+            $req->attach('foto', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName());
+        }
+        return $req->put('/pengelola/wisata', $data);
+    }
+
     public function pengelolaWisataUpdate(array $data): Response
     {
         return $this->client()->put('/pengelola/wisata', $data);
     }
 
-    public function pengelolaUploadGaleri(UploadedFile $file): Response
+    public function pengelolaUploadGaleri(\Illuminate\Http\UploadedFile $file): Response
     {
-        return $this->client()
+        return $this->multipartClient()
                     ->attach('image', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
                     ->post('/pengelola/wisata/galeri');
     }
@@ -187,19 +209,37 @@ class ApiService
         return $this->client()->delete("/pengelola/wisata/galeri/$id");
     }
 
-    // ── Pengelola: Paket Camping ─────────────────────────────
+    // ── ⚡ Pengelola: Paket Camping ─────────────────────────────
     public function getPaketCamping(): Response
     {
         return $this->client()->get('/pengelola/paket-camping');
     }
 
-    public function createPaketCamping(array $data): Response
+    /**
+     * ⚡ DITAMBAHKAN: Mengakomodasi upload file biner multipart saat pembuatan data paket baru
+     */
+    public function createPaketCamping(array $data, UploadedFile $file = null): Response
     {
+        if ($file) {
+            return $this->multipartClient()
+                        ->attach('foto', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
+                        ->post('/pengelola/paket-camping', $data);
+        }
+        
         return $this->client()->post('/pengelola/paket-camping', $data);
     }
 
-    public function updatePaketCamping(int $id, array $data): Response
+    public function updatePaketCamping(int $id, array $data, UploadedFile $file = null): Response
     {
+        // ⚡ Jika ada file gambar yang dikirimkan saat pembaruan (edit)
+        if ($file) {
+            $data['_method'] = 'PUT'; // <- Menambahkan spoofing method agar backend port 8000 membaca PUT
+            return $this->multipartClient()
+                        ->attach('foto', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
+                        ->post("/pengelola/paket-camping/{$id}", $data);
+        }
+
+        // Jika tidak ada file gambar yang diunggah, gunakan method PUT standar
         return $this->client()->put("/pengelola/paket-camping/{$id}", $data);
     }
 
@@ -208,42 +248,72 @@ class ApiService
         return $this->client()->delete("/pengelola/paket-camping/{$id}");
     }
 
-    // ── Pengelola: Penginapan ────────────────────────────────
-    public function getPenginapan(): Response
-    {
-        return $this->client()->get('/pengelola/penginapan');
-    }
+    // ── Pengelola: Penginapan (Diperbarui untuk mendukung upload multipart)
+public function getPenginapan(): Response
+{
+    return $this->client()->get('/pengelola/penginapan');
+}
 
-    public function createPenginapan(array $data): Response
-    {
-        return $this->client()->post('/pengelola/penginapan', $data);
+public function createPenginapan(array $data, UploadedFile $file = null): Response
+{
+    if ($file) {
+        return $this->multipartClient()
+                    ->attach('foto_cover', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
+                    ->post('/pengelola/penginapan', $data);
     }
+    return $this->client()->post('/pengelola/penginapan', $data);
+}
 
-    public function updatePenginapan(int $id, array $data): Response
-    {
-        return $this->client()->put("/pengelola/penginapan/$id", $data);
+public function updatePenginapan(int $id, array $data, UploadedFile $file = null): Response
+{
+    if ($file) {
+        $data['_method'] = 'PUT'; // Spoofing method PUT via POST multipart
+        return $this->multipartClient()
+                    ->attach('foto_cover', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
+                    ->post("/pengelola/penginapan/$id", $data);
     }
+    return $this->client()->put("/pengelola/penginapan/$id", $data);
+}
+
+public function deletePenginapan(int $id): Response
+{
+    return $this->client()->delete("/pengelola/penginapan/$id");
+}
 
     // ── Pengelola: Peralatan Camping ─────────────────────────
-    public function getPeralatan(): Response
-    {
-        return $this->client()->get('/pengelola/peralatan');
-    }
+// ── Pengelola: Peralatan Camping (Diperbarui mendukung attachment file biner)
+public function getPeralatan(): Response
+{
+    return $this->client()->get('/pengelola/peralatan');
+}
 
-    public function createPeralatan(array $data): Response
-    {
-        return $this->client()->post('/pengelola/peralatan', $data);
+public function createPeralatan(array $data, UploadedFile $file = null): Response
+{
+    if ($file) {
+        return $this->multipartClient()
+                    ->attach('foto', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
+                    ->post('/pengelola/peralatan', $data);
     }
+    return $this->client()->post('/pengelola/peralatan', $data);
+}
 
-    public function updatePeralatan(int $id, array $data): Response
-    {
-        return $this->client()->put("/pengelola/peralatan/$id", $data);
+public function updatePeralatan(int $id, array $data, UploadedFile $file = null): Response
+{
+    if ($file) {
+        // Langsung kirim sebagai POST biner ke endpoint update yang telah diubah di port 8000
+        return $this->multipartClient()
+                    ->attach('foto', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
+                    ->post("/pengelola/peralatan/$id", $data);
     }
+    
+    // Jika tidak ada file gambar yang diunggah, tetap gunakan method PUT standar (atau POST jika endpoint disamakan)
+    return $this->client()->put("/pengelola/peralatan/$id", $data);
+}
 
-    public function deletePeralatan(int $id): Response
-    {
-        return $this->client()->delete("/pengelola/peralatan/$id");
-    }
+public function deletePeralatan(int $id): Response
+{
+    return $this->client()->delete("/pengelola/peralatan/$id");
+}
 
     // ── Pengelola: Reservasi & Booking ───────────────────────
     public function pengelolaGetReservasi(array $params = []): Response

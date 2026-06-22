@@ -18,7 +18,7 @@ class WisataController extends Controller
     public function index()
     {
         // Menarik data dari API server pusat
-        $res = $this->api->pengelolaWisataDetail(); // Sesuaikan dengan method ApiService Anda
+        $res = $this->api->pengelolaWisataDetail();
         $wisata = $res->successful() ? $res->json('data') : [];
 
         return view('pengelola.wisata.index', compact('wisata'));
@@ -26,10 +26,22 @@ class WisataController extends Controller
 
     public function update(Request $request)
     {
-        $res = $this->api->pengelolaWisataUpdate($request->all());
+        $request->validate([
+            'nama'        => 'required|string|max:255',
+            'harga_tiket' => 'required|numeric|min:0',
+            'kapasitas'   => 'required|integer|min:1',
+            'deskripsi'   => 'required|string',
+            'foto'        => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        $data = $request->only(['nama', 'harga_tiket', 'kapasitas', 'deskripsi']);
+        $file = $request->file('foto');
+
+        // Mengirimkan data teks dan file ke method multipart API
+        $res = $this->api->updateWisataMultipart($data, $file);
 
         if (!$res->successful()) {
-            return back()->withErrors(['error' => $res->json('message') ?? 'Gagal memperbarui data profil wahana wisata.']);
+            return back()->withInput()->withErrors(['error' => $res->json('message') ?? 'Gagal memperbarui data profil wahana wisata.']);
         }
 
         return redirect()->route('pengelola.wisata')->with('success', 'Profil wahana / objek wisata berhasil diperbarui.');
@@ -37,11 +49,15 @@ class WisataController extends Controller
 
     public function uploadGaleri(Request $request)
     {
-        // Fungsi upload galeri ke server port 8000 via API
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048'
+        ]);
+
+        // Sesuai dengan form terisolasi blade, tangkap input 'image'
         $res = $this->api->pengelolaUploadGaleri($request->file('image'));
 
         if (!$res->successful()) {
-            return back()->withErrors(['error' => 'Gagal mengunggah foto galeri.']);
+            return back()->withErrors(['error' => $res->json('message') ?? 'Gagal mengunggah foto galeri.']);
         }
 
         return redirect()->route('pengelola.wisata')->with('success', 'Foto galeri berhasil ditambahkan.');
@@ -57,4 +73,4 @@ class WisataController extends Controller
 
         return redirect()->route('pengelola.wisata')->with('success', 'Foto galeri berhasil dihapus.');
     }
-} 
+}

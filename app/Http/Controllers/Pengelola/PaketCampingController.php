@@ -21,22 +21,34 @@ class PaketCampingController extends Controller
             session()->flash('error', 'Gagal memuat data paket camping dari server.');
         }
 
-        // FIX DIREKTORI: Diarahkan ke folder internal 'paket' sesuai struktur yang sah
         return view('pengelola.paket.index', compact('paket'));
     }
  
     public function store(Request $request)
     {
-        // 1. Validasi Input di Sisi Web (UX & Data Integrity)
+        // 1. Validasi Input di Sisi Web
         $validated = $request->validate([
             'nama_paket' => 'required|string|max:255',
-            'harga'      => 'required|numeric|min:0',
             'kapasitas'  => 'required|integer|min:1',
+            'harga'      => 'required|numeric|min:0',
             'deskripsi'  => 'nullable|string',
+            'foto'       => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // 2. Kirim hanya data yang sudah tervalidasi ke API
-        $res = $this->api->createPaketCamping($validated);
+        $payload = [
+            'nama_paket'      => $validated['nama_paket'],
+            'kapasitas_tamu'  => $validated['kapasitas'],
+            'harga_per_malam' => $validated['harga'],
+            'deskripsi'       => $validated['deskripsi'],
+            'total_slot'      => 99,
+            'tersedia'        => true
+        ];
+
+        // 2. Ambil file foto dari request jika ada
+        $fotoFile = $request->file('foto');
+
+        // 3. Kirim ke API beserta file gambarnya
+        $res = $this->api->createPaketCamping($payload, $fotoFile);
  
         if (!$res->successful() || !$res->json('success')) {
             return back()
@@ -49,16 +61,27 @@ class PaketCampingController extends Controller
  
     public function update(Request $request, $id)
     {
-        // 1. Validasi data pembaruan
         $validated = $request->validate([
             'nama_paket' => 'required|string|max:255',
-            'harga'      => 'required|numeric|min:0',
             'kapasitas'  => 'required|integer|min:1',
+            'harga'      => 'required|numeric|min:0',
             'deskripsi'  => 'nullable|string',
+            'foto'       => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // 2. Tembak ke API dengan data yang aman
-        $res = $this->api->updatePaketCamping($id, $validated);
+        $payload = [
+            'nama_paket'      => $validated['nama_paket'],
+            'kapasitas_tamu'  => $validated['kapasitas'],
+            'harga_per_malam' => $validated['harga'],
+            'deskripsi'       => $validated['deskripsi'],
+            'total_slot'      => 99,
+            'tersedia'        => true
+        ];
+
+        $fotoFile = $request->file('foto');
+
+        // 2. Tembak ke API dengan menyertakan file foto jika diunggah
+        $res = $this->api->updatePaketCamping($id, $payload, $fotoFile);
  
         if (!$res->successful()) {
             return back()
