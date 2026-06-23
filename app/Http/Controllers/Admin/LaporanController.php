@@ -3,32 +3,31 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\ApiService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 
 class LaporanController extends Controller
 {
-    private $apiBaseUrl = 'http://127.0.0.1:8000/api/v1/admin';
+    public function __construct(private ApiService $api) {}
 
     public function index(Request $request)
     {
         $summary = [
             'total_pendapatan' => 0,
-            'total_transaksi' => 0,
-            'periode_dari' => now()->startOfMonth()->toDateString(),
-            'periode_sampai' => now()->endOfMonth()->toDateString(),
+            'total_transaksi'  => 0,
+            'periode_dari'     => now()->startOfMonth()->toDateString(),
+            'periode_sampai'   => now()->endOfMonth()->toDateString(),
         ];
         $rincian = [];
 
-        try {
-            $response = Http::get("{$this->apiBaseUrl}/laporan", $request->all());
-            if ($response->successful()) {
-                $result = $response->json();
-                $summary = $result['data'] ?? $summary;
-                $rincian = $result['data']['rincian_laporan'] ?? [];
-            }
-        } catch (\Exception $e) {
-            $summary['error'] = 'Gagal menyambungkan ke peladen pusat.';
+        $res = $this->api->adminGetLaporan($request->only(['dari', 'sampai']));
+
+        if ($res->successful()) {
+            $result  = $res->json('data') ?? [];
+            $summary = array_merge($summary, $result);
+            $rincian = $result['rincian_laporan'] ?? [];
+        } else {
+            session()->flash('error', 'Gagal memuat laporan dari server API.');
         }
 
         return view('admin.laporan.index', compact('summary', 'rincian'));

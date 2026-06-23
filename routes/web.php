@@ -117,8 +117,4 @@ Route::prefix('pengelola')->name('pengelola.')->middleware('auth.web:pengelola')
     Route::put('reservasi/{reservasi}',     [Pengelola\ReservasiController::class, 'update'])->name('reservasi.update');
 
     Route::get('laporan',                   [Pengelola\LaporanController::class, 'index'])->name('laporan');
-
-    // Pastikan rute Anda memiliki nama ('pengelola.paket-camping.store') di ujung barisnya
-Route::post('/pengelola/paket-camping', [App\Http\Controllers\Pengelola\PaketCampingController::class, 'store'])
-    ->name('pengelola.paket-camping.store');
 });

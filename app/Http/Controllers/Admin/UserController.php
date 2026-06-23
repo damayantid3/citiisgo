@@ -100,4 +100,21 @@ class UserController extends Controller
 
         return back()->withErrors(['error' => $res->json('message') ?? 'Gagal menghapus user dari server API.']);
     }
-}
+
+    /**
+     * Mengubah role user via API
+     */
+    public function changeRole(Request $request, $id)
+    {
+        $request->validate([
+            'role' => 'required|in:admin,pengelola,user',
+        ]);
+
+        $res = $this->api->changeUserRole($id, $request->role);
+
+        if ($res->successful() || $res->json('success') == true) {
+            return redirect()->route('admin.users')->with('success', 'Role user berhasil diubah.');
+        }
+
+        return back()->withErrors(['error' => $res->json('message') ?? 'Gagal mengubah role user.']);
+    }}

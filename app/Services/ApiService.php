@@ -16,8 +16,8 @@ class ApiService
 
     public function __construct()
     {
-        // Mengunci langsung alamat server backend API yang sudah sukses mengeluarkan JSON
-        $this->baseUrl = 'http://127.0.0.1:8000/api/v1';
+        // Ambil dari env CITIISGO_API_URL, fallback ke 127.0.0.1:8001 (port standar API)
+        $this->baseUrl = rtrim(env('CITIISGO_API_URL', 'http://127.0.0.1:8001'), '/') . '/api/v1';
     }
 
     /**
@@ -50,6 +50,11 @@ class ApiService
     }
 
     // ── Auth ─────────────────────────────────────────────────
+    public function register(array $data): Response
+    {
+        return $this->client()->post('/auth/register', $data);
+    }
+
     public function login(string $email, string $password): Response
     {
         return $this->client()->post('/auth/login', compact('email', 'password'));
@@ -115,6 +120,21 @@ class ApiService
     public function adminDeleteWisata(int $id): Response
     {
         return $this->client()->delete("/admin/wisata/$id");
+    }
+
+    public function adminStoreWisataMultipart(array $data, UploadedFile $file): Response
+    {
+        return $this->multipartClient()
+                    ->attach('foto', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
+                    ->post('/admin/wisata', $data);
+    }
+
+    public function adminUpdateWisataMultipart(int $id, array $data, UploadedFile $file): Response
+    {
+        $data['_method'] = 'PUT';
+        return $this->multipartClient()
+                    ->attach('foto', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
+                    ->post("/admin/wisata/$id", $data);
     }
 
     // ── Admin: Kategori ──────────────────────────────────────

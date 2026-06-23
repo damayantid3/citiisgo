@@ -7,7 +7,6 @@ use App\Services\ApiService;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Http;
 
 class LoginController extends Controller
 {
@@ -41,7 +40,7 @@ class LoginController extends Controller
      */
     public function register(Request $request)
     {
-        // Validasi input di sisi Web Admin (Menerima 'nama' dari form HTML register.blade.php)
+        // Validasi input di sisi Web
         $request->validate([
             'nama'     => 'required|string|max:255',
             'email'    => 'required|email',
@@ -49,27 +48,21 @@ class LoginController extends Controller
         ]);
 
         try {
-            // STRATEGI AMAN: Mengirimkan key 'name' DAN 'nama' sekaligus 
-            // agar lolos apa pun jenis validasi yang dipasang di Server API Anda
-            $response = Http::baseUrl('http://127.0.0.1:8000/api/v1')
-                ->acceptJson()
-                ->post('/auth/register', [
-                    'name'                  => $request->nama, // Untuk API yang mencari 'name'
-                    'nama'                  => $request->nama, // Untuk API yang mencari 'nama'
-                    'email'                 => $request->email,
-                    'password'              => $request->password,
-                    'password_confirmation' => $request->password_confirmation,
-                    'role'                  => 'user'
-                ]);
+            // Gunakan ApiService agar baseUrl selalu konsisten dengan .env
+            $response = $this->api->register([
+                'nama'                  => $request->nama,
+                'email'                 => $request->email,
+                'password'              => $request->password,
+                'password_confirmation' => $request->password_confirmation,
+                'role'                  => 'user'
+            ]);
 
             if (!$response->successful() || !$response->json('success')) {
-                // Mengambil pesan error dari API secara detail
                 $apiErrors = $response->json('errors') ?? [];
                 $errorMessage = $response->json('message') ?? 'Gagal melakukan pendaftaran.';
                 
-                // Jika API mengembalikan array eror spesifik, ambil yang pertama
                 if (!empty($apiErrors)) {
-                    $flattened = Arr::flatten($apiErrors);
+                    $flattened = \Illuminate\Support\Arr::flatten($apiErrors);
                     $errorMessage = !empty($flattened) ? reset($flattened) : $errorMessage;
                 }
 
@@ -78,12 +71,12 @@ class LoginController extends Controller
                     ->withErrors(['register_error' => $errorMessage]);
             }
 
-            return redirect()->route('login')->with('success', 'Akun Wisandari berhasil dibuat! Silakan masuk.');
+            return redirect()->route('login')->with('success', 'Akun berhasil dibuat! Silakan masuk.');
 
         } catch (Exception $e) {
             return back()
                 ->withInput($request->except('password'))
-                ->withErrors(['register_error' => 'Gagal terhubung ke server registrasi Citiisgo-API.']);
+                ->withErrors(['register_error' => 'Gagal terhubung ke server Citiisgo-API.']);
         }
     }
  

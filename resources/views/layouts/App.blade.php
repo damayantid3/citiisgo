@@ -110,16 +110,20 @@
             
             <div class="h-6 w-[1px] bg-slate-200 mx-1"></div>
 
-            {{-- Identitas Akun Sesi Login --}}
+            {{-- Identitas Akun Sesi Login (Session-based, bukan Auth guard) --}}
             <div class="flex items-center gap-2.5 pl-1">
                 <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs bg-emerald-600 shadow-md uppercase">
-                    {{ strtoupper(substr(Auth::guard('admin')->user()->name ?? 'AD', 0, 2)) }}
+                    {{ strtoupper(substr(session('user.nama') ?? session('user.name') ?? 'US', 0, 2)) }}
                 </div>
                 <div class="hidden md:block text-left leading-tight">
                     <div class="text-slate-800 text-xs font-extrabold tracking-tight">
-                        {{ Auth::guard('admin')->user()->name ?? 'Administrator' }}
+                        {{ session('user.nama') ?? session('user.name') ?? 'Pengguna' }}
                     </div>
-                    <div class="text-emerald-700 text-[9px] font-black uppercase tracking-wider mt-1">Admin Pusat</div>
+                    <div class="text-emerald-700 text-[9px] font-black uppercase tracking-wider mt-1">
+                        @if(session('user_role') === 'admin') Admin Pusat
+                        @elseif(session('user_role') === 'pengelola') Pengelola Wisata
+                        @else Wisatawan @endif
+                    </div>
                 </div>
             </div>
         </div>
