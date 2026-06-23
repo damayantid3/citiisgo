@@ -5,36 +5,53 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Services\ApiService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 
 class WisataController extends Controller
 {
     public function __construct(private ApiService $api) {}
 
     /**
-     * Menampilkan daftar jelajah wisata untuk sisi wisatawan
+     * Daftar semua wisata untuk halaman Jelajah
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Mengambil data kategori untuk filter jika dibutuhkan
-        $res = $this->api->getKategori(); 
-        
-        // Mengambil data rute publik wisata dari backend API (Port 8000 secara absolut)
-        $responseWisata = Http::baseUrl('http://127.0.0.1:8000/api/v1')
-            ->acceptJson()
-            ->get('/wisata');
+        $params = $request->only(['search', 'kategori_id', 'sort']);
+        $resWisata   = $this->api->getWisataPublik($params);
+        $resKategori = $this->api->getKategori();
 
-        $daftarWisata = $responseWisata->successful() ? ($responseWisata->json('data') ?? []) : [];
+        $daftarWisata = $resWisata->successful()   ? ($resWisata->json('data') ?? []) : [];
+        $kategori     = $resKategori->successful() ? ($resKategori->json('data') ?? []) : [];
 
-        return view('user.wisata.index', compact('daftarWisata'));
+        // Normalisasi: jika API mengembalikan paginate (ada key 'data' di dalam 'data')
+        if (isset($daftarWisata['data'])) {
+            $daftarWisata = $daftarWisata['data'];
+        }
+
+        return view('user.wisata.index', compact('daftarWisata', 'kategori'));
     }
 
     /**
-     * Menampilkan detail destinasi wisata tertentu pilihan wisatawan
+     * Detail wisata + form reservasi tiket
      */
     public function show($id)
     {
-        // Melempar id ke view agar dapat diakses oleh JavaScript fetchDetailWisata()
-        return view('user.wisata.show', compact('id'));
+        $res = $this->api->getWisataDetail((int) $id);
+
+        if (!$res->successful()) {
+            abort(404, 'Destinasi wisata tidak ditemukan.');
+        }
+
+        $wisata = $res->json('data');
+
+        // Ambil paket camping, penginapan, peralatan milik wisata ini
+        $resCamping    = $this->api->getPaketCampingPublik((int) $id);
+        $resPenginapan = $this->api->getPenginapanPublik((int) $id);
+        $resPeralatan  = $this->api->getPeralatanPublik((int) $id);
+
+        $paketCamping = $resCamping->successful()    ? ($resCamping->json('data')    ?? []) : [];
+        $penginapan   = $resPenginapan->successful() ? ($resPenginapan->json('data') ?? []) : [];
+        $peralatan    = $resPeralatan->successful()  ? ($resPeralatan->json('data')  ?? []) : [];
+
+        return view('user.wisata.show', compact('wisata', 'paketCamping', 'penginapan', 'peralatan'));
     }
 }

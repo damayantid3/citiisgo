@@ -366,4 +366,111 @@ public function deletePeralatan(int $id): Response
     {
         return $this->client()->get('/pengelola/laporan', $params);
     }
+
+    // ── USER / WISATAWAN ─────────────────────────────────────────────────
+    public function getWisataPublik(array $params = []): Response
+    {
+        return $this->client()->get('/wisata', $params);
+    }
+
+    public function getWisataDetail(int $id): Response
+    {
+        return $this->client()->get("/wisata/$id");
+    }
+
+    public function getWisataGaleri(int $id): Response
+    {
+        return $this->client()->get("/wisata/$id/galeri");
+    }
+
+    public function getPaketCampingPublik(int $wisataId): Response
+    {
+        return $this->client()->get("/wisata/$wisataId/paket-camping");
+    }
+
+    public function getPenginapanPublik(int $wisataId): Response
+    {
+        return $this->client()->get("/wisata/$wisataId/penginapan");
+    }
+
+    public function getPeralatanPublik(int $wisataId): Response
+    {
+        return $this->client()->get("/wisata/$wisataId/peralatan");
+    }
+
+    // Reservasi tiket masuk
+    public function createReservasi(array $data): Response
+    {
+        return $this->client()->post('/user/reservasi', $data);
+    }
+
+    public function getRiwayatReservasi(): Response
+    {
+        return $this->client()->get('/user/reservasi');
+    }
+
+    public function getDetailReservasi(int $id): Response
+    {
+        return $this->client()->get("/user/reservasi/$id");
+    }
+
+    public function cancelReservasi(int $id): Response
+    {
+        return $this->client()->delete("/user/reservasi/$id");
+    }
+
+    // Booking camping
+    public function createBookingCamping(array $data): Response
+    {
+        return $this->client()->post('/user/booking-camping', $data);
+    }
+
+    public function getRiwayatBookingCamping(): Response
+    {
+        return $this->client()->get('/user/booking-camping');
+    }
+
+    // Booking penginapan
+    public function createBookingPenginapan(array $data): Response
+    {
+        return $this->client()->post('/user/booking-penginapan', $data);
+    }
+
+    public function getRiwayatBookingPenginapan(): Response
+    {
+        return $this->client()->get('/user/booking-penginapan');
+    }
+
+    // Sewa peralatan
+    public function createSewaPeralatan(array $data): Response
+    {
+        return $this->client()->post('/user/sewa-peralatan', $data);
+    }
+
+    public function getRiwayatSewaPeralatan(): Response
+    {
+        return $this->client()->get('/user/sewa-peralatan');
+    }
+
+    // Ulasan
+    public function createUlasan(array $data): Response
+    {
+        return $this->client()->post('/user/ulasan', $data);
+    }
+
+    // Notifikasi user
+    public function getUserNotifikasi(): Response
+    {
+        return $this->client()->get('/user/notifikasi');
+    }
+
+    public function markNotifikasiRead(int $id): Response
+    {
+        return $this->client()->put("/user/notifikasi/$id/read");
+    }
+
+    public function markAllNotifikasiRead(): Response
+    {
+        return $this->client()->post('/user/notifikasi/read-all');
+    }
 }

@@ -1,54 +1,100 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riwayat Pesanan - CitiisGo</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .bg-brand-green { background-color: #0D3D18; }
-        .text-brand-green { color: #0D3D18; }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-</head>
-<body style="font-family: 'Plus Jakarta Sans', sans-serif;" class="bg-gray-50 font-sans antialiased text-slate-700">
+@extends('layouts.user')
+@section('title', 'Riwayat Pesanan - CitiisGo')
 
-    <nav class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-3">
-                    <a href="{{ route('user.dashboard') }}" class="text-2xl font-black text-brand-green tracking-tight">Citiis<span class="text-slate-800">Go</span></a>
-                    <span class="bg-emerald-50 text-emerald-700 text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-emerald-100">Riwayat Pesanan</span>
+@section('content')
+<div class="max-w-5xl mx-auto px-4 py-8 font-sans">
+
+    <div class="mb-8">
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">📋 Riwayat Pesanan Saya</h1>
+        <p class="text-xs text-slate-500 mt-1">Semua transaksi tiket, camping, dan penginapan Anda tercatat di sini.</p>
+    </div>
+
+    @if(session('success'))
+    <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold px-4 py-3 rounded-xl mb-6">
+        ✅ {{ session('success') }}
+    </div>
+    @endif
+
+    {{-- ── TIKET MASUK ─────────────────────────────────────────────── --}}
+    <div class="mb-8">
+        <h2 class="font-black text-sm text-slate-700 mb-3 uppercase tracking-wider">🎟️ Tiket Masuk</h2>
+        @if(!empty($reservasi))
+        <div class="space-y-3">
+            @foreach($reservasi as $r)
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between shadow-sm">
+                <div>
+                    <div class="font-bold text-sm text-slate-800">{{ $r['wisata']['nama'] ?? 'Destinasi Wisata' }}</div>
+                    <div class="text-xs text-slate-400 mt-0.5">📅 {{ $r['tanggal_kunjungan'] ?? '-' }} · 👥 {{ $r['jumlah_orang'] ?? 1 }} orang</div>
                 </div>
-                <a href="{{ route('user.wisata.index') }}" class="text-xs font-bold text-slate-600 hover:text-brand-green transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard
-                </a>
+                <span class="text-[10px] font-black uppercase px-3 py-1.5 rounded-full
+                    {{ ($r['status'] ?? '') === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                       (($r['status'] ?? '') === 'pending'   ? 'bg-amber-100 text-amber-700' :
+                       (($r['status'] ?? '') === 'cancelled' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500')) }}">
+                    {{ $r['status'] ?? 'pending' }}
+                </span>
             </div>
+            @endforeach
         </div>
-    </nav>
-
-    <main class="max-w-4xl mx-auto px-4 py-16">
-        <div class="text-center mb-10">
-            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Riwayat Reservasi Anda</h1>
-            <p class="text-slate-500 text-xs font-medium">Semua tiket dan pesanan layanan yang Anda buat akan muncul di sini secara transparan.</p>
+        @else
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-8 text-center text-slate-400 text-xs">
+            Belum ada reservasi tiket masuk. <a href="{{ route('user.wisata.index') }}" class="text-emerald-600 font-bold">Jelajahi sekarang →</a>
         </div>
+        @endif
+    </div>
 
-        <div class="bg-white rounded-3xl shadow-xl p-12 border border-slate-100 text-center max-w-xl mx-auto">
-            <div class="w-20 h-20 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-5">
-                <i class="fa-solid fa-receipt"></i>
+    {{-- ── BOOKING CAMPING ──────────────────────────────────────────── --}}
+    <div class="mb-8">
+        <h2 class="font-black text-sm text-slate-700 mb-3 uppercase tracking-wider">🏕️ Booking Camping</h2>
+        @if(!empty($camping))
+        <div class="space-y-3">
+            @foreach($camping as $c)
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between shadow-sm">
+                <div>
+                    <div class="font-bold text-sm text-slate-800">{{ $c['paket']['nama_paket'] ?? 'Paket Camping' }}</div>
+                    <div class="text-xs text-slate-400 mt-0.5">
+                        📅 {{ $c['tanggal_checkin'] ?? '-' }} → {{ $c['tanggal_checkout'] ?? '-' }}
+                    </div>
+                </div>
+                <span class="text-[10px] font-black uppercase px-3 py-1.5 rounded-full
+                    {{ ($c['status'] ?? '') === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                    {{ $c['status'] ?? 'pending' }}
+                </span>
             </div>
-            <h2 class="font-bold text-slate-800 text-base mb-1">Belum ada riwayat pemesanan</h2>
-            <p class="text-slate-400 text-xs mb-8">Silakan buat pesanan tiket destinasi, kemah, atau sewa alat terlebih dahulu melalui halaman dasbor.</p>
-            <a href="{{ route('user.wisata.index') }}" class="bg-brand-green text-white font-bold text-xs px-6 py-4 rounded-2xl hover:bg-[#1A5C28] transition shadow-sm inline-block tracking-wide w-full max-w-xs">
-                Jelajahi Wisata Sekarang
-            </a>
+            @endforeach
         </div>
-    </main>
+        @else
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-8 text-center text-slate-400 text-xs">
+            Belum ada booking camping. <a href="{{ route('user.booking.camping') }}" class="text-emerald-600 font-bold">Pesan sekarang →</a>
+        </div>
+        @endif
+    </div>
 
-    <footer class="bg-white border-t border-slate-100 py-8 text-center text-slate-400 text-xs font-semibold tracking-wider uppercase mt-12">
-        <p>&copy; 2026 CitiisGo - Portal Reservasi Wisatawan</p>
-    </footer>
+    {{-- ── BOOKING PENGINAPAN ───────────────────────────────────────── --}}
+    <div class="mb-8">
+        <h2 class="font-black text-sm text-slate-700 mb-3 uppercase tracking-wider">🏠 Booking Penginapan</h2>
+        @if(!empty($penginapan))
+        <div class="space-y-3">
+            @foreach($penginapan as $p)
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between shadow-sm">
+                <div>
+                    <div class="font-bold text-sm text-slate-800">{{ $p['kamar']['penginapan']['nama'] ?? 'Penginapan' }}</div>
+                    <div class="text-xs text-slate-400 mt-0.5">
+                        📅 {{ $p['tanggal_checkin'] ?? '-' }} → {{ $p['tanggal_checkout'] ?? '-' }}
+                    </div>
+                </div>
+                <span class="text-[10px] font-black uppercase px-3 py-1.5 rounded-full
+                    {{ ($p['status'] ?? '') === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                    {{ $p['status'] ?? 'pending' }}
+                </span>
+            </div>
+            @endforeach
+        </div>
+        @else
+        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-8 text-center text-slate-400 text-xs">
+            Belum ada booking penginapan.
+        </div>
+        @endif
+    </div>
 
-</body>
-</html>
+</div>
+@endsection

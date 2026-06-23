@@ -6,6 +6,9 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Pengelola;
 use App\Http\Controllers\User\WisataController as UserWisataController;
+use App\Http\Controllers\User\ReservasiController as UserReservasiController;
+use App\Http\Controllers\User\BookingController as UserBookingController;
+use App\Http\Controllers\User\NotifikasiController as UserNotifikasiController;
 
 // ── Landing Page ────────────────────
 Route::get('/', function () {
@@ -38,23 +41,38 @@ Route::prefix('api/v1')->name('api.v1.')->group(function () {
 
 // ─── User / Wisatawan ──
 Route::prefix('user')->name('user.')->middleware('auth.web:user')->group(function () {
+
+    // Dashboard — redirect ke halaman jelajah
     Route::get('dashboard', function () {
         return redirect()->route('user.wisata.index');
     })->name('dashboard');
 
-    Route::get('wisata', function() {
-        return view('user.index');
-    })->name('wisata.index');
-    
-    Route::get('wisata/{id}', [UserWisataController::class, 'show'])->name('wisata.show');
-    Route::get('booking/tiket',     function() { return view('user.booking.tiket'); })->name('booking.tiket');
-    Route::get('booking/camping',  function() { return view('user.booking.camping'); })->name('booking.camping');
-    Route::get('booking/history',  function() { return view('user.booking.history'); })->name('booking.history');
-    Route::get('booking/invoice/{id}', function() { return view('user.booking.invoice'); })->name('booking.invoice');
-    
-    Route::get('notifikasi', [App\Http\Controllers\User\NotifikasiController::class, 'index'])->name('notifikasi.index');
-    Route::put('notifikasi/{id}/read', [App\Http\Controllers\User\NotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
-    Route::post('notifikasi/read-all', [App\Http\Controllers\User\NotifikasiController::class, 'markAllRead'])->name('notifikasi.read-all');
+    // ── Jelajah Wisata ─────────────────────────────────────────────────
+    Route::get('wisata',       [UserWisataController::class, 'index'])->name('wisata.index');
+    Route::get('wisata/{id}',  [UserWisataController::class, 'show'])->name('wisata.show');
+
+    // ── Reservasi Tiket Masuk ──────────────────────────────────────────
+    Route::post('reservasi',          [UserReservasiController::class, 'store'])->name('reservasi.store');
+    Route::get('reservasi/{id}/invoice', [UserReservasiController::class, 'invoice'])->name('booking.invoice');
+    Route::delete('reservasi/{id}',   [UserReservasiController::class, 'cancel'])->name('reservasi.cancel');
+
+    // ── Booking Camping ────────────────────────────────────────────────
+    Route::get('booking/camping',     [UserBookingController::class, 'showCamping'])->name('booking.camping');
+    Route::post('booking-camping',    [UserBookingController::class, 'storeCamping'])->name('booking.camping.store');
+
+    // ── Booking Penginapan ─────────────────────────────────────────────
+    Route::get('booking/penginapan',  [UserBookingController::class, 'showPenginapan'])->name('booking.penginapan');
+    Route::post('booking-penginapan', [UserBookingController::class, 'storePenginapan'])->name('booking.penginapan.store');
+
+    // ── Riwayat Semua Booking ──────────────────────────────────────────
+    Route::get('booking/history',     [UserBookingController::class, 'history'])->name('booking.history');
+
+    // ── Notifikasi ─────────────────────────────────────────────────────
+    Route::get('notifikasi',              [UserNotifikasiController::class, 'index'])->name('notifikasi.index');
+    Route::put('notifikasi/{id}/read',    [UserNotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
+    Route::post('notifikasi/read-all',    [UserNotifikasiController::class, 'markAllRead'])->name('notifikasi.read-all');
+
+    Route::get('profil',  [App\Http\Controllers\User\ProfilController::class, 'index'])->name('profil');
 });
 
 // ─── Admin Pusat (Verifikator Sentral & Auditor Finansial) ──
